@@ -54,7 +54,7 @@ export function AgencyForm({
       <div className="flex flex-col gap-2">
         <Label htmlFor="internal-time">
           {isGeo
-            ? "Temps interne par audit GEO (h)"
+            ? "Temps interne moyen par livrable GEO (audit ou article) (h)"
             : "Temps de production interne par déclinaison (h)"}
         </Label>
         <Input
@@ -91,7 +91,9 @@ export function AgencyForm({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="annual-volume">
-          {isGeo ? "Volume annuel d'audits GEO réalisés" : "Volume annuel de déclinaisons produites"}
+          {isGeo
+            ? "Volume annuel de livrables GEO (audits + articles)"
+            : "Volume annuel de déclinaisons produites"}
         </Label>
         <Input
           id="annual-volume"

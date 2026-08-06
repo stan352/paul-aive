@@ -95,7 +95,7 @@ export function BreakEvenChart({
         </div>
         <div className="h-64 w-full" ref={containerRef}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={series.points} margin={{ top: 10, right: 10, bottom: 20, left: 0 }}>
+            <LineChart data={series.points} margin={{ top: 26, right: 10, bottom: 20, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="quantity"

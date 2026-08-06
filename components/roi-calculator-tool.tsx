@@ -25,9 +25,11 @@ const DEFAULT_BRAND_INPUT: BrandROIInput = {
 };
 
 // Défauts réalistes par offre (recherchés en ligne, cf. mémoire projet) :
-// Aive — temps/taux d'une équipe créa/prod vidéo ; Aive GEO — temps/taux d'un
-// audit GEO par une équipe SEO/contenu. Les volumes annuels sont des ordres
-// de grandeur plausibles, à ajuster par le GP selon le prospect.
+// Aive — temps/taux d'une équipe créa/prod vidéo ; Aive GEO — temps/taux
+// moyen d'une équipe SEO/contenu, mélangeant audits GEO (plus longs, plus
+// rares) et rédaction d'articles GEO (plus courte, plus fréquente). Les
+// volumes annuels sont des ordres de grandeur plausibles, à ajuster par le
+// GP selon le prospect.
 const DEFAULT_AGENCY_INPUT_BY_PRODUCT: Record<AgencyProductType, AgencyROIInput> = {
   Aive: {
     internalTimePerDeclinaison: 3,
@@ -36,10 +38,10 @@ const DEFAULT_AGENCY_INPUT_BY_PRODUCT: Record<AgencyProductType, AgencyROIInput>
     proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.videoGeneration,
   },
   "Aive GEO": {
-    internalTimePerDeclinaison: 12,
+    internalTimePerDeclinaison: 6,
     teamHourlyRate: 55,
-    annualVolume: 40,
-    proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.geoAudit,
+    annualVolume: 80,
+    proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.geo,
   },
 };
 

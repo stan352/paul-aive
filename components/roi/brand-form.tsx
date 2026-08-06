@@ -37,7 +37,7 @@ export function BrandForm({
       proposedAiveAnnualCost:
         agencyType === "CREA"
           ? AIVE_ANNUAL_COST_DEFAULTS.videoGeneration
-          : AIVE_ANNUAL_COST_DEFAULTS.geoAudit,
+          : AIVE_ANNUAL_COST_DEFAULTS.geo,
     });
   }
 
@@ -55,7 +55,7 @@ export function BrandForm({
           <SelectContent>
             {AGENCY_TYPES.map((type) => (
               <SelectItem key={type} value={type}>
-                {type === "CREA" ? "Agence créative (CREA)" : "Agence d'audit GEO"}
+                {type === "CREA" ? "Agence créative (CREA)" : "Agence GEO (audits & articles)"}
               </SelectItem>
             ))}
           </SelectContent>

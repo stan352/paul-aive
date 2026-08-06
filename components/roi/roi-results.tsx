@@ -124,7 +124,7 @@ export function RoiResults(props: RoiResultsProps) {
       ? buildBrandBreakEvenSeries(props.input)
       : buildAgencyBreakEvenSeries(
           props.input,
-          props.agencyProductType === "Aive GEO" ? "audits" : "déclinaisons"
+          props.agencyProductType === "Aive GEO" ? "livrables GEO" : "déclinaisons"
         );
 
   function handleDownloadBarChart() {

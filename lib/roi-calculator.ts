@@ -10,7 +10,7 @@ export const AGENCY_COST_DEFAULTS: Record<AgencyType, number> = {
 // soit vu depuis le mode Marque (agencyType) ou Agence (productType).
 export const AIVE_ANNUAL_COST_DEFAULTS = {
   videoGeneration: 38400, // Aive
-  geoAudit: 12000, // Aive GEO
+  geo: 12000, // Aive GEO (audits + rédaction d'articles GEO)
 } as const;
 
 export interface BrandROIInput {
