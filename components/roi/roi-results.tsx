@@ -34,8 +34,11 @@ type RoiResultsProps =
   | { mode: "agency-video"; input: AgencyROIInput; result: AgencyROIResult }
   | { mode: "agency-geo"; input: AgencyGeoROIInput; result: AgencyGeoROIResult };
 
-const GEO_BREAKEVEN_NOTE =
+const AGENCY_GEO_BREAKEVEN_NOTE =
   "Coût moyen par livrable pondéré par le mix actuel d'audits et d'articles GEO (chacun avec son propre temps de production et son propre volume annuel).";
+
+const BRAND_GEO_BREAKEVEN_NOTE =
+  "Coût par livrable dérivé du forfait mensuel de l'agence GEO, réparti sur le volume annuel de livrables (audits + articles) saisi ci-dessus — les KPI ROI/rentabilisation restent basés sur le forfait mensuel, indépendamment de ce volume.";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -241,7 +244,13 @@ export function RoiResults(props: RoiResultsProps) {
       <BreakEvenChart
         series={breakEvenSeries}
         filename={`seuil-de-rentabilite-${fileSlug}.png`}
-        note={props.mode === "agency-geo" ? GEO_BREAKEVEN_NOTE : undefined}
+        note={
+          props.mode === "agency-geo"
+            ? AGENCY_GEO_BREAKEVEN_NOTE
+            : props.mode === "brand" && props.input.agencyType === "GEO"
+              ? BRAND_GEO_BREAKEVEN_NOTE
+              : undefined
+        }
       />
     </div>
   );

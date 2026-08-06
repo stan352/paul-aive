@@ -26,11 +26,48 @@ const STYLE_PROPERTIES = [
   "stroke-linecap",
   "stroke-linejoin",
   "opacity",
-  "font-size",
-  "font-family",
-  "font-weight",
-  "text-anchor",
 ];
+
+interface ExtractedTextRun {
+  content: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  fontWeight: string;
+  fill: string;
+  align: CanvasTextAlign;
+}
+
+// Le <svg> exporté est rasterisé isolément dans une <img> (voir plus bas) :
+// ce contexte n'a pas accès aux polices web de la page (Inter/Anuphan), donc
+// tout texte encore présent dans le SVG retombe sur une police système par
+// défaut à l'export. On extrait donc la position/le style de chaque texte
+// depuis le graphique source (encore attaché au DOM, styles corrects), pour
+// le supprimer du SVG exporté et le redessiner nous-mêmes sur le canvas final
+// avec la bonne police.
+function extractTextRuns(source: SVGSVGElement): ExtractedTextRun[] {
+  const svgRect = source.getBoundingClientRect();
+  const runs: ExtractedTextRun[] = [];
+  source.querySelectorAll("text").forEach((el) => {
+    const content = el.textContent?.trim();
+    if (!content) return;
+    const rect = el.getBoundingClientRect();
+    const computed = window.getComputedStyle(el);
+    const anchor = computed.getPropertyValue("text-anchor").trim();
+    const align: CanvasTextAlign = anchor === "middle" ? "center" : anchor === "end" ? "right" : "left";
+    const x = align === "center" ? rect.left + rect.width / 2 : align === "right" ? rect.right : rect.left;
+    runs.push({
+      content,
+      x: x - svgRect.left,
+      y: rect.bottom - svgRect.top,
+      fontSize: parseFloat(computed.getPropertyValue("font-size")) || 12,
+      fontWeight: computed.getPropertyValue("font-weight") || "400",
+      fill: computed.getPropertyValue("fill") || "#374151",
+      align,
+    });
+  });
+  return runs;
+}
 
 // Les éléments de Recharts utilisent souvent des couleurs via variables CSS
 // (`var(--primary)`, `currentColor`, etc.), résolues normalement par la
@@ -98,8 +135,11 @@ export function downloadSvgAsPng(
   const width = Math.max(1, rect.width);
   const height = Math.max(1, rect.height);
 
+  const textRuns = extractTextRuns(svg);
+
   const clone = svg.cloneNode(true) as SVGSVGElement;
   inlineComputedStyles(svg, clone);
+  clone.querySelectorAll("text").forEach((el) => el.remove());
   clone.setAttribute("width", String(width));
   clone.setAttribute("height", String(height));
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -150,6 +190,14 @@ export function downloadSvgAsPng(
     }
 
     context.drawImage(image, 0, headerHeight * scale, width * scale, height * scale);
+
+    context.textBaseline = "alphabetic";
+    for (const run of textRuns) {
+      context.font = `${run.fontWeight} ${run.fontSize * scale}px Inter, sans-serif`;
+      context.fillStyle = run.fill;
+      context.textAlign = run.align;
+      context.fillText(run.content, run.x * scale, headerHeight * scale + run.y * scale);
+    }
 
     if (noteLines.length) {
       context.fillStyle = "#6b7280";

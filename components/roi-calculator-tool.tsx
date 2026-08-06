@@ -76,7 +76,7 @@ export function RoiCalculatorTool() {
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Outil 3 — ROI Calculator &amp; Export tableau</CardTitle>
+        <CardTitle>Outil 3 — ROI Calculator</CardTitle>
         <CardDescription>
           À utiliser pendant le rendez-vous de closing, pour calculer en direct le ROI
           et convaincre avec les chiffres du prospect. Aucun appel externe, tout se
