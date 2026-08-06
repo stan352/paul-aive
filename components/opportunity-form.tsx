@@ -67,9 +67,11 @@ export function OpportunityForm() {
       <CardHeader>
         <CardTitle>Outil 2 — Opportunity Finder &amp; Pitch Angle</CardTitle>
         <CardDescription>
-          Clique sur « Générer » : un onglet Claude Design s&apos;ouvre et le prompt est
-          copié dans ton presse-papier — colle-le (Cmd+V). Claude recherche lui-même les
-          opportunités du prospect en ligne pour construire ton pitch client.
+          À utiliser après la découverte, pour identifier les opportunités du prospect
+          et construire ton angle de pitch. Clique sur « Générer » : un onglet Claude
+          Design s&apos;ouvre et le prompt est copié dans ton presse-papier — colle-le
+          (Cmd+V). Claude recherche lui-même les opportunités du prospect en ligne pour
+          construire ton pitch client.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">

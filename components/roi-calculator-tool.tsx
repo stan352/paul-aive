@@ -86,7 +86,8 @@ export function RoiCalculatorTool() {
       <CardHeader>
         <CardTitle>Outil 3 — ROI Calculator &amp; Export tableau</CardTitle>
         <CardDescription>
-          Calcul en direct pendant le RDV de closing — aucun appel externe, tout se
+          À utiliser pendant le rendez-vous de closing, pour calculer en direct le ROI
+          et convaincre avec les chiffres du prospect. Aucun appel externe, tout se
           calcule dans ton navigateur.
         </CardDescription>
       </CardHeader>

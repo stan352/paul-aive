@@ -73,9 +73,10 @@ export function DiscoveryForm() {
       <CardHeader>
         <CardTitle>Outil 1 — Script Generator &amp; Discovery Playbook</CardTitle>
         <CardDescription>
-          Clique sur « Générer » : un onglet Claude Design s&apos;ouvre et le prompt est
-          copié dans ton presse-papier — colle-le (Cmd+V) pour obtenir ta fiche de
-          découverte.
+          À utiliser avant un premier rendez-vous, pour préparer les chiffres à obtenir
+          et les arguments à avoir en tête. Clique sur « Générer » : un onglet Claude
+          Design s&apos;ouvre et le prompt est copié dans ton presse-papier — colle-le
+          (Cmd+V) pour obtenir ta fiche de découverte.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
