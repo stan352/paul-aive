@@ -34,11 +34,25 @@ type RoiResultsProps =
   | { mode: "agency-video"; input: AgencyROIInput; result: AgencyROIResult }
   | { mode: "agency-geo"; input: AgencyGeoROIInput; result: AgencyGeoROIResult };
 
-const AGENCY_GEO_BREAKEVEN_NOTE =
-  "Coût moyen par livrable pondéré par le mix actuel d'audits et d'articles GEO (chacun avec son propre temps de production et son propre volume annuel).";
+const BREAKEVEN_NOTES = {
+  brandCrea:
+    "Coût agence constant par déclinaison ; coût Aive qui baisse quand l'abonnement annuel se répartit sur davantage de déclinaisons.",
+  brandGeo:
+    "Coût par livrable dérivé du forfait mensuel de l'agence GEO, réparti sur le volume annuel de livrables (audits + articles) saisi ci-dessus — les KPI ROI/rentabilisation restent basés sur le forfait mensuel, indépendamment de ce volume.",
+  agencyVideo:
+    "Coût actuel constant par déclinaison (temps interne × taux horaire) ; coût Aive qui baisse vers son coût résiduel quand l'abonnement Aive se répartit sur davantage de déclinaisons.",
+  agencyGeo:
+    "Coût moyen par livrable pondéré par le mix actuel d'audits et d'articles GEO (chacun avec son propre temps de production et son propre volume annuel).",
+} as const;
 
-const BRAND_GEO_BREAKEVEN_NOTE =
-  "Coût par livrable dérivé du forfait mensuel de l'agence GEO, réparti sur le volume annuel de livrables (audits + articles) saisi ci-dessus — les KPI ROI/rentabilisation restent basés sur le forfait mensuel, indépendamment de ce volume.";
+const BAR_CHART_NOTES = {
+  brandCrea: "Coût agence = coût par déclinaison × volume annuel produit. Coût Aive = abonnement annuel proposé.",
+  brandGeo: "Coût agence = forfait mensuel de l'agence × 12. Coût Aive = abonnement annuel proposé.",
+  agencyVideo:
+    "Coût actuel = temps interne × taux horaire × volume annuel. Coût avec Aive = (temps résiduel × taux horaire + abonnement Aive ÷ volume) × volume annuel.",
+  agencyGeo:
+    "Coût actuel et coût avec Aive additionnent audits et articles GEO, chacun avec son propre temps de production et son propre volume annuel.",
+} as const;
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -141,10 +155,28 @@ export function RoiResults(props: RoiResultsProps) {
   const fileSlug =
     props.mode === "brand" ? "marque" : props.mode === "agency-video" ? "agence-video" : "agence-geo";
 
+  const breakEvenNote =
+    props.mode === "brand"
+      ? props.input.agencyType === "GEO"
+        ? BREAKEVEN_NOTES.brandGeo
+        : BREAKEVEN_NOTES.brandCrea
+      : props.mode === "agency-video"
+        ? BREAKEVEN_NOTES.agencyVideo
+        : BREAKEVEN_NOTES.agencyGeo;
+
+  const barChartNote =
+    props.mode === "brand"
+      ? props.input.agencyType === "GEO"
+        ? BAR_CHART_NOTES.brandGeo
+        : BAR_CHART_NOTES.brandCrea
+      : props.mode === "agency-video"
+        ? BAR_CHART_NOTES.agencyVideo
+        : BAR_CHART_NOTES.agencyGeo;
+
   function handleDownloadBarChart() {
     const svg = barChartRef.current ? findChartSvg(barChartRef.current) : null;
     if (svg) {
-      downloadSvgAsPng(svg, `cout-annuel-${fileSlug}.png`, { title: barChartTitle });
+      downloadSvgAsPng(svg, `cout-annuel-${fileSlug}.png`, { title: barChartTitle, note: barChartNote });
     }
   }
 
@@ -229,6 +261,7 @@ export function RoiResults(props: RoiResultsProps) {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <p className="text-xs text-muted-foreground">* {barChartNote}</p>
           <Button
             type="button"
             variant="outline"
@@ -244,13 +277,7 @@ export function RoiResults(props: RoiResultsProps) {
       <BreakEvenChart
         series={breakEvenSeries}
         filename={`seuil-de-rentabilite-${fileSlug}.png`}
-        note={
-          props.mode === "agency-geo"
-            ? AGENCY_GEO_BREAKEVEN_NOTE
-            : props.mode === "brand" && props.input.agencyType === "GEO"
-              ? BRAND_GEO_BREAKEVEN_NOTE
-              : undefined
-        }
+        note={breakEvenNote}
       />
     </div>
   );
