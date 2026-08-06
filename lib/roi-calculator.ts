@@ -16,6 +16,10 @@ export const AIVE_ANNUAL_COST_DEFAULTS = {
 export interface BrandROIInput {
   agencyType: AgencyType;
   annualVideoVolume: number;
+  // Volume annuel de livrables GEO (audits + articles) produits par l'agence
+  // remplacée — n'intervient que si agencyType === "GEO", pour exprimer le
+  // seuil de rentabilité en livrables plutôt qu'en mois.
+  annualGeoVolume: number;
   agencyCost: number;
   proposedAiveAnnualCost: number;
 }
@@ -111,6 +115,63 @@ export function computeAgencyROI({
   return {
     currentCostPerDeclinaison,
     aiveCostPerDeclinaison,
+    annualProductionSaving,
+    roiPercent: roiPercentValue,
+    paybackMonths,
+  };
+}
+
+// Mode Agence — offre Aive GEO : deux types de livrables bien distincts
+// (audit, plus long et plus rare ; article, plus court et plus fréquent),
+// chacun avec son propre temps de production et son propre volume annuel,
+// pour refléter fidèlement le mix réel de l'agence plutôt qu'une moyenne.
+export interface AgencyGeoROIInput {
+  internalTimePerArticle: number;
+  internalTimePerAudit: number;
+  teamHourlyRate: number;
+  annualArticleVolume: number;
+  annualAuditVolume: number;
+  proposedAiveAnnualCost: number;
+}
+
+export interface AgencyGeoROIResult {
+  currentAnnualCost: number;
+  aiveAnnualCost: number;
+  annualProductionSaving: number;
+  roiPercent: number | null;
+  paybackMonths: number | null;
+}
+
+export function computeAgencyGeoROI({
+  internalTimePerArticle,
+  internalTimePerAudit,
+  teamHourlyRate,
+  annualArticleVolume,
+  annualAuditVolume,
+  proposedAiveAnnualCost,
+}: AgencyGeoROIInput): AgencyGeoROIResult {
+  const currentAnnualCost =
+    annualArticleVolume * internalTimePerArticle * teamHourlyRate +
+    annualAuditVolume * internalTimePerAudit * teamHourlyRate;
+
+  const residualArticleTime = internalTimePerArticle * AIVE_RESIDUAL_TIME_RATIO;
+  const residualAuditTime = internalTimePerAudit * AIVE_RESIDUAL_TIME_RATIO;
+
+  const aiveAnnualCost =
+    annualArticleVolume * residualArticleTime * teamHourlyRate +
+    annualAuditVolume * residualAuditTime * teamHourlyRate +
+    proposedAiveAnnualCost;
+
+  const annualProductionSaving = currentAnnualCost - aiveAnnualCost;
+
+  const roiPercent = safeDivide(annualProductionSaving, proposedAiveAnnualCost);
+  const roiPercentValue = roiPercent === null ? null : roiPercent * 100;
+
+  const paybackMonths = safeDivide(proposedAiveAnnualCost, annualProductionSaving / 12);
+
+  return {
+    currentAnnualCost,
+    aiveAnnualCost,
     annualProductionSaving,
     roiPercent: roiPercentValue,
     paybackMonths,

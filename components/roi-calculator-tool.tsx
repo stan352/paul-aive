@@ -10,8 +10,10 @@ import { RoiResults } from "@/components/roi/roi-results";
 import {
   AGENCY_COST_DEFAULTS,
   AIVE_ANNUAL_COST_DEFAULTS,
+  computeAgencyGeoROI,
   computeAgencyROI,
   computeBrandROI,
+  type AgencyGeoROIInput,
   type AgencyProductType,
   type AgencyROIInput,
   type BrandROIInput,
@@ -20,66 +22,54 @@ import {
 const DEFAULT_BRAND_INPUT: BrandROIInput = {
   agencyType: "CREA",
   annualVideoVolume: 144,
+  annualGeoVolume: 80,
   agencyCost: AGENCY_COST_DEFAULTS.CREA,
   proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.videoGeneration,
 };
 
 // Défauts réalistes par offre (recherchés en ligne, cf. mémoire projet) :
-// Aive — temps/taux d'une équipe créa/prod vidéo ; Aive GEO — temps/taux
-// moyen d'une équipe SEO/contenu, mélangeant audits GEO (plus longs, plus
-// rares) et rédaction d'articles GEO (plus courte, plus fréquente). Les
-// volumes annuels sont des ordres de grandeur plausibles, à ajuster par le
-// GP selon le prospect.
-const DEFAULT_AGENCY_INPUT_BY_PRODUCT: Record<AgencyProductType, AgencyROIInput> = {
-  Aive: {
-    internalTimePerDeclinaison: 3,
-    teamHourlyRate: 45,
-    annualVolume: 500,
-    proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.videoGeneration,
-  },
-  "Aive GEO": {
-    internalTimePerDeclinaison: 6,
-    teamHourlyRate: 55,
-    annualVolume: 80,
-    proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.geo,
-  },
+// Aive — temps/taux d'une équipe créa/prod vidéo.
+const DEFAULT_AGENCY_VIDEO_INPUT: AgencyROIInput = {
+  internalTimePerDeclinaison: 3,
+  teamHourlyRate: 45,
+  annualVolume: 500,
+  proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.videoGeneration,
+};
+
+// Aive GEO — audit GEO (plus long, plus rare) et rédaction d'article GEO
+// (plus courte, plus fréquente) traités séparément, chacun avec son propre
+// temps de production et son propre volume annuel.
+const DEFAULT_AGENCY_GEO_INPUT: AgencyGeoROIInput = {
+  internalTimePerArticle: 3,
+  internalTimePerAudit: 12,
+  teamHourlyRate: 55,
+  annualArticleVolume: 60,
+  annualAuditVolume: 20,
+  proposedAiveAnnualCost: AIVE_ANNUAL_COST_DEFAULTS.geo,
 };
 
 export function RoiCalculatorTool() {
   const [mode, setMode] = useState<"brand" | "agency">("brand");
   const [brandInput, setBrandInput] = useState<BrandROIInput>(DEFAULT_BRAND_INPUT);
   const [agencyProductType, setAgencyProductType] = useState<AgencyProductType>("Aive");
-  const [agencyInput, setAgencyInput] = useState<AgencyROIInput>(
-    DEFAULT_AGENCY_INPUT_BY_PRODUCT.Aive
+  const [agencyVideoInput, setAgencyVideoInput] = useState<AgencyROIInput>(
+    DEFAULT_AGENCY_VIDEO_INPUT
+  );
+  const [agencyGeoInput, setAgencyGeoInput] = useState<AgencyGeoROIInput>(
+    DEFAULT_AGENCY_GEO_INPUT
   );
 
   const brandResult = computeBrandROI(brandInput);
-  const agencyResult = computeAgencyROI(agencyInput);
-
-  function handleAgencyProductTypeChange(productType: AgencyProductType) {
-    if (productType === agencyProductType) return;
-
-    const isUnchanged =
-      JSON.stringify(agencyInput) ===
-      JSON.stringify(DEFAULT_AGENCY_INPUT_BY_PRODUCT[agencyProductType]);
-    if (
-      !isUnchanged &&
-      !window.confirm(
-        "Changer d'offre remet les champs à leurs valeurs par défaut — les valeurs déjà saisies pour ce prospect seront perdues. Continuer ?"
-      )
-    ) {
-      return;
-    }
-
-    setAgencyProductType(productType);
-    setAgencyInput(DEFAULT_AGENCY_INPUT_BY_PRODUCT[productType]);
-  }
+  const agencyVideoResult = computeAgencyROI(agencyVideoInput);
+  const agencyGeoResult = computeAgencyGeoROI(agencyGeoInput);
 
   function handleReset() {
     if (mode === "brand") {
       setBrandInput(DEFAULT_BRAND_INPUT);
+    } else if (agencyProductType === "Aive") {
+      setAgencyVideoInput(DEFAULT_AGENCY_VIDEO_INPUT);
     } else {
-      setAgencyInput(DEFAULT_AGENCY_INPUT_BY_PRODUCT[agencyProductType]);
+      setAgencyGeoInput(DEFAULT_AGENCY_GEO_INPUT);
     }
   }
 
@@ -105,9 +95,11 @@ export function RoiCalculatorTool() {
           <TabsContent value="agency" className="pt-4">
             <AgencyForm
               productType={agencyProductType}
-              onProductTypeChange={handleAgencyProductTypeChange}
-              input={agencyInput}
-              onChange={setAgencyInput}
+              onProductTypeChange={setAgencyProductType}
+              videoInput={agencyVideoInput}
+              onVideoChange={setAgencyVideoInput}
+              geoInput={agencyGeoInput}
+              onGeoChange={setAgencyGeoInput}
             />
           </TabsContent>
         </Tabs>
@@ -118,13 +110,10 @@ export function RoiCalculatorTool() {
 
         {mode === "brand" ? (
           <RoiResults mode="brand" input={brandInput} result={brandResult} />
+        ) : agencyProductType === "Aive" ? (
+          <RoiResults mode="agency-video" input={agencyVideoInput} result={agencyVideoResult} />
         ) : (
-          <RoiResults
-            mode="agency"
-            input={agencyInput}
-            result={agencyResult}
-            agencyProductType={agencyProductType}
-          />
+          <RoiResults mode="agency-geo" input={agencyGeoInput} result={agencyGeoResult} />
         )}
       </CardContent>
     </Card>

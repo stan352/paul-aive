@@ -1,4 +1,9 @@
-import { AIVE_RESIDUAL_TIME_RATIO, type AgencyROIInput, type BrandROIInput } from "@/lib/roi-calculator";
+import {
+  AIVE_RESIDUAL_TIME_RATIO,
+  type AgencyGeoROIInput,
+  type AgencyROIInput,
+  type BrandROIInput,
+} from "@/lib/roi-calculator";
 
 export interface BreakEvenPoint {
   quantity: number;
@@ -47,35 +52,54 @@ function buildPoints(
   return points;
 }
 
-// Seuil de rentabilité mode Marque : coût agence (constant, par déclinaison
-// en CREA / par mois en GEO) vs coût Aive moyen, qui décroît quand le coût
+// Seuil de rentabilité mode Marque, agence créative (CREA) : coût agence
+// (constant par déclinaison) vs coût Aive moyen, qui décroît quand le coût
 // annuel fixe se répartit sur davantage d'unités — les deux courbes se
-// croisent exactement au "délai/nombre de déclinaisons pour rentabiliser"
-// déjà utilisé par computeBrandROI.
+// croisent exactement au "nombre de déclinaisons pour rentabiliser" déjà
+// utilisé par computeBrandROI.
+//
+// Agence GEO : le coût agence est un forfait mensuel (pas de volume dans
+// computeBrandROI), converti ici en coût par livrable GEO à partir du volume
+// annuel de livrables (audits + articles) produits par l'agence, pour
+// exprimer le seuil de rentabilité en livrables plutôt qu'en mois.
 export function buildBrandBreakEvenSeries(input: BrandROIInput): BreakEvenSeries {
+  if (input.agencyType === "CREA") {
+    const breakEvenQuantity =
+      input.agencyCost > 0 ? input.proposedAiveAnnualCost / input.agencyCost : null;
+    const maxQuantity = Math.max(
+      breakEvenQuantity ? breakEvenQuantity * RANGE_MULTIPLIER : input.annualVideoVolume,
+      2
+    );
+
+    return {
+      points: buildPoints(input.agencyCost, 0, input.proposedAiveAnnualCost, maxQuantity),
+      breakEvenQuantity,
+      quantityLabel: "déclinaisons",
+    };
+  }
+
+  const agencyAnnualCost = input.agencyCost * 12;
+  const costPerLivrable =
+    input.annualGeoVolume > 0 ? agencyAnnualCost / input.annualGeoVolume : 0;
   const breakEvenQuantity =
-    input.agencyCost > 0 ? input.proposedAiveAnnualCost / input.agencyCost : null;
-  const fallbackMax = input.agencyType === "CREA" ? input.annualVideoVolume : 12;
+    costPerLivrable > 0 ? input.proposedAiveAnnualCost / costPerLivrable : null;
   const maxQuantity = Math.max(
-    breakEvenQuantity ? breakEvenQuantity * RANGE_MULTIPLIER : fallbackMax,
+    breakEvenQuantity ? breakEvenQuantity * RANGE_MULTIPLIER : input.annualGeoVolume,
     2
   );
 
   return {
-    points: buildPoints(input.agencyCost, 0, input.proposedAiveAnnualCost, maxQuantity),
+    points: buildPoints(costPerLivrable, 0, input.proposedAiveAnnualCost, maxQuantity),
     breakEvenQuantity,
-    quantityLabel: input.agencyType === "CREA" ? "déclinaisons" : "mois",
+    quantityLabel: "livrables GEO",
   };
 }
 
-// Seuil de rentabilité mode Agence : coût de production actuel par
-// déclinaison (constant) vs coût de production avec Aive, qui décroît vers
-// son coût marginal (temps résiduel × taux horaire) quand le coût annuel
-// fixe Aive se répartit sur davantage de déclinaisons.
-export function buildAgencyBreakEvenSeries(
-  input: AgencyROIInput,
-  quantityLabel = "déclinaisons"
-): BreakEvenSeries {
+// Seuil de rentabilité mode Agence, offre Aive (vidéo) : coût de production
+// actuel par déclinaison (constant) vs coût de production avec Aive, qui
+// décroît vers son coût marginal (temps résiduel × taux horaire) quand le
+// coût annuel fixe Aive se répartit sur davantage de déclinaisons.
+export function buildAgencyBreakEvenSeries(input: AgencyROIInput): BreakEvenSeries {
   const marginalAiveCost =
     input.internalTimePerDeclinaison * AIVE_RESIDUAL_TIME_RATIO * input.teamHourlyRate;
   const referenceCost = input.internalTimePerDeclinaison * input.teamHourlyRate;
@@ -89,6 +113,41 @@ export function buildAgencyBreakEvenSeries(
   return {
     points: buildPoints(referenceCost, marginalAiveCost, input.proposedAiveAnnualCost, maxQuantity),
     breakEvenQuantity,
-    quantityLabel,
+    quantityLabel: "déclinaisons",
+  };
+}
+
+// Seuil de rentabilité mode Agence, offre Aive GEO : audits et articles ont
+// des temps de production et des volumes propres. On pondère chacun par son
+// volume réel pour obtenir un coût moyen par livrable qui reflète le mix
+// actuel de l'agence, plutôt qu'une moyenne arbitraire — la courbe reste
+// exprimée en "livrables GEO" mais le calcul sous-jacent tient compte des
+// deux types de livrable séparément (cf. computeAgencyGeoROI).
+export function buildAgencyGeoBreakEvenSeries(input: AgencyGeoROIInput): BreakEvenSeries {
+  const totalVolume = input.annualArticleVolume + input.annualAuditVolume;
+
+  const currentAnnualCost =
+    input.annualArticleVolume * input.internalTimePerArticle * input.teamHourlyRate +
+    input.annualAuditVolume * input.internalTimePerAudit * input.teamHourlyRate;
+  const residualAnnualCost =
+    input.annualArticleVolume *
+      input.internalTimePerArticle *
+      AIVE_RESIDUAL_TIME_RATIO *
+      input.teamHourlyRate +
+    input.annualAuditVolume * input.internalTimePerAudit * AIVE_RESIDUAL_TIME_RATIO * input.teamHourlyRate;
+
+  const referenceCost = totalVolume > 0 ? currentAnnualCost / totalVolume : 0;
+  const marginalAiveCost = totalVolume > 0 ? residualAnnualCost / totalVolume : 0;
+  const gap = referenceCost - marginalAiveCost;
+  const breakEvenQuantity = gap > 0 ? input.proposedAiveAnnualCost / gap : null;
+  const maxQuantity = Math.max(
+    breakEvenQuantity ? breakEvenQuantity * RANGE_MULTIPLIER : totalVolume,
+    2
+  );
+
+  return {
+    points: buildPoints(referenceCost, marginalAiveCost, input.proposedAiveAnnualCost, maxQuantity),
+    breakEvenQuantity,
+    quantityLabel: "livrables GEO",
   };
 }

@@ -62,20 +62,37 @@ export function BrandForm({
         </Select>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="annual-video-volume">
-          Volume annuel de vidéos/déclinaisons produites
-        </Label>
-        <Input
-          id="annual-video-volume"
-          type="number"
-          min={0}
-          value={input.annualVideoVolume}
-          onChange={(event) =>
-            onChange({ ...input, annualVideoVolume: numberFromEvent(event.target.value) })
-          }
-        />
-      </div>
+      {input.agencyType === "CREA" ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="annual-video-volume">
+            Volume annuel de vidéos/déclinaisons produites
+          </Label>
+          <Input
+            id="annual-video-volume"
+            type="number"
+            min={0}
+            value={input.annualVideoVolume}
+            onChange={(event) =>
+              onChange({ ...input, annualVideoVolume: numberFromEvent(event.target.value) })
+            }
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="annual-geo-volume">
+            Volume annuel de livrables GEO produits par l&apos;agence (audits + articles)
+          </Label>
+          <Input
+            id="annual-geo-volume"
+            type="number"
+            min={0}
+            value={input.annualGeoVolume}
+            onChange={(event) =>
+              onChange({ ...input, annualGeoVolume: numberFromEvent(event.target.value) })
+            }
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="agency-cost">

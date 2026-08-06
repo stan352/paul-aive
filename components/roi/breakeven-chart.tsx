@@ -28,9 +28,11 @@ const numberFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 
 export function BreakEvenChart({
   series,
   filename,
+  note,
 }: {
   series: BreakEvenSeries;
   filename: string;
+  note?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const title = `Seuil de rentabilité (coût par ${series.quantityLabel})`;
@@ -58,6 +60,7 @@ export function BreakEvenChart({
           { label: "Coût sans Aive", color: REFERENCE_CHART_COLOR },
           { label: "Coût avec Aive", color: AIVE_CHART_COLOR },
         ],
+        note,
       });
     }
   }
@@ -162,6 +165,7 @@ export function BreakEvenChart({
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {note && <p className="text-xs text-muted-foreground">* {note}</p>}
         <Button type="button" variant="outline" size="sm" className="self-start" onClick={handleDownload}>
           Télécharger le graphique
         </Button>

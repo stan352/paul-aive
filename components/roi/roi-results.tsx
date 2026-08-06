@@ -16,22 +16,26 @@ import { BreakEvenChart } from "@/components/roi/breakeven-chart";
 import { AIVE_CHART_COLOR } from "@/lib/chart-colors";
 import { downloadSvgAsPng, findChartSvg } from "@/lib/export-chart";
 import type {
-  AgencyProductType,
+  AgencyGeoROIInput,
+  AgencyGeoROIResult,
   AgencyROIInput,
   AgencyROIResult,
   BrandROIInput,
   BrandROIResult,
 } from "@/lib/roi-calculator";
-import { buildAgencyBreakEvenSeries, buildBrandBreakEvenSeries } from "@/lib/roi-chart-data";
+import {
+  buildAgencyBreakEvenSeries,
+  buildAgencyGeoBreakEvenSeries,
+  buildBrandBreakEvenSeries,
+} from "@/lib/roi-chart-data";
 
 type RoiResultsProps =
   | { mode: "brand"; input: BrandROIInput; result: BrandROIResult }
-  | {
-      mode: "agency";
-      input: AgencyROIInput;
-      result: AgencyROIResult;
-      agencyProductType: AgencyProductType;
-    };
+  | { mode: "agency-video"; input: AgencyROIInput; result: AgencyROIResult }
+  | { mode: "agency-geo"; input: AgencyGeoROIInput; result: AgencyGeoROIResult };
+
+const GEO_BREAKEVEN_NOTE =
+  "Coût moyen par livrable pondéré par le mix actuel d'audits et d'articles GEO (chacun avec son propre temps de production et son propre volume annuel).";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -108,31 +112,36 @@ export function RoiResults(props: RoiResultsProps) {
           { name: "Coût agence", value: Math.max(0, props.result.agencyAnnualCost) },
           { name: "Coût Aive", value: Math.max(0, props.input.proposedAiveAnnualCost) },
         ]
-      : [
-          {
-            name: "Coût actuel",
-            value: Math.max(0, props.input.annualVolume * props.result.currentCostPerDeclinaison),
-          },
-          {
-            name: "Coût avec Aive",
-            value: Math.max(0, props.input.annualVolume * props.result.aiveCostPerDeclinaison),
-          },
-        ];
+      : props.mode === "agency-video"
+        ? [
+            {
+              name: "Coût actuel",
+              value: Math.max(0, props.input.annualVolume * props.result.currentCostPerDeclinaison),
+            },
+            {
+              name: "Coût avec Aive",
+              value: Math.max(0, props.input.annualVolume * props.result.aiveCostPerDeclinaison),
+            },
+          ]
+        : [
+            { name: "Coût actuel", value: Math.max(0, props.result.currentAnnualCost) },
+            { name: "Coût avec Aive", value: Math.max(0, props.result.aiveAnnualCost) },
+          ];
 
   const breakEvenSeries =
     props.mode === "brand"
       ? buildBrandBreakEvenSeries(props.input)
-      : buildAgencyBreakEvenSeries(
-          props.input,
-          props.agencyProductType === "Aive GEO" ? "livrables GEO" : "déclinaisons"
-        );
+      : props.mode === "agency-video"
+        ? buildAgencyBreakEvenSeries(props.input)
+        : buildAgencyGeoBreakEvenSeries(props.input);
+
+  const fileSlug =
+    props.mode === "brand" ? "marque" : props.mode === "agency-video" ? "agence-video" : "agence-geo";
 
   function handleDownloadBarChart() {
     const svg = barChartRef.current ? findChartSvg(barChartRef.current) : null;
     if (svg) {
-      downloadSvgAsPng(svg, `cout-annuel-${props.mode === "brand" ? "marque" : "agence"}.png`, {
-        title: barChartTitle,
-      });
+      downloadSvgAsPng(svg, `cout-annuel-${fileSlug}.png`, { title: barChartTitle });
     }
   }
 
@@ -160,7 +169,11 @@ export function RoiResults(props: RoiResultsProps) {
           <>
             <KpiCard
               label="Coût de production actuel (annuel)"
-              value={formatCurrency(props.input.annualVolume * props.result.currentCostPerDeclinaison)}
+              value={formatCurrency(
+                props.mode === "agency-video"
+                  ? props.input.annualVolume * props.result.currentCostPerDeclinaison
+                  : props.result.currentAnnualCost
+              )}
             />
             <KpiCard
               label="Économie de production annuelle"
@@ -227,7 +240,8 @@ export function RoiResults(props: RoiResultsProps) {
 
       <BreakEvenChart
         series={breakEvenSeries}
-        filename={`seuil-de-rentabilite-${props.mode === "brand" ? "marque" : "agence"}.png`}
+        filename={`seuil-de-rentabilite-${fileSlug}.png`}
+        note={props.mode === "agency-geo" ? GEO_BREAKEVEN_NOTE : undefined}
       />
     </div>
   );

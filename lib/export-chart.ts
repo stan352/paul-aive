@@ -1,3 +1,23 @@
+// Découpe naïve par nombre de caractères plutôt que par mesure canvas réelle :
+// suffisant pour une note de bas de graphique, sans dépendre d'un contexte 2D
+// déjà créé.
+function wrapText(text: string, maxCharsPerLine: number): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > maxCharsPerLine && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
 const STYLE_PROPERTIES = [
   "fill",
   "stroke",
@@ -59,7 +79,7 @@ export interface ChartLegendEntry {
 export function downloadSvgAsPng(
   svg: SVGSVGElement,
   filename: string,
-  options?: { title?: string; legend?: ChartLegendEntry[]; scale?: number }
+  options?: { title?: string; legend?: ChartLegendEntry[]; note?: string; scale?: number }
 ): void {
   const scale = options?.scale ?? 2;
   const titleHeight = options?.title ? 32 : 0;
@@ -69,6 +89,11 @@ export function downloadSvgAsPng(
   // graphique, pour qu'elle apparaisse bien sur l'image téléchargée.
   const legendHeight = options?.legend?.length ? 26 : 0;
   const headerHeight = titleHeight + legendHeight;
+  // La note explicative (astérisque) affichée sous le graphique dans l'appli
+  // est elle aussi hors du <svg> — redessinée en pied de page sur le PNG,
+  // avec un retour à la ligne simple si elle dépasse la largeur du graphique.
+  const noteLines = options?.note ? wrapText(options.note, 90) : [];
+  const noteHeight = noteLines.length ? 14 + noteLines.length * 14 : 0;
   const rect = svg.getBoundingClientRect();
   const width = Math.max(1, rect.width);
   const height = Math.max(1, rect.height);
@@ -88,7 +113,7 @@ export function downloadSvgAsPng(
   image.onload = () => {
     const canvas = document.createElement("canvas");
     canvas.width = width * scale;
-    canvas.height = (height + headerHeight) * scale;
+    canvas.height = (height + headerHeight + noteHeight) * scale;
 
     const context = canvas.getContext("2d");
     if (!context) {
@@ -100,8 +125,8 @@ export function downloadSvgAsPng(
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     if (options?.title) {
-      context.fillStyle = "#111111";
-      context.font = `600 ${16 * scale}px system-ui, sans-serif`;
+      context.fillStyle = "#1D2026";
+      context.font = `700 ${16 * scale}px Anuphan, sans-serif`;
       context.textBaseline = "top";
       context.fillText(options.title, 12 * scale, 10 * scale);
     }
@@ -111,20 +136,32 @@ export function downloadSvgAsPng(
       const gapAfterSwatch = 6 * scale;
       const gapBetweenEntries = 18 * scale;
       const legendY = titleHeight * scale + 6 * scale;
-      context.font = `${13 * scale}px system-ui, sans-serif`;
+      context.font = `${13 * scale}px Inter, sans-serif`;
       context.textBaseline = "middle";
       let x = 12 * scale;
       for (const entry of options.legend) {
         context.fillStyle = entry.color;
         context.fillRect(x, legendY, swatchSize, swatchSize);
         x += swatchSize + gapAfterSwatch;
-        context.fillStyle = "#111111";
+        context.fillStyle = "#1D2026";
         context.fillText(entry.label, x, legendY + swatchSize / 2);
         x += context.measureText(entry.label).width + gapBetweenEntries;
       }
     }
 
     context.drawImage(image, 0, headerHeight * scale, width * scale, height * scale);
+
+    if (noteLines.length) {
+      context.fillStyle = "#6b7280";
+      context.font = `${11 * scale}px Inter, sans-serif`;
+      context.textBaseline = "top";
+      const noteY = (headerHeight + height) * scale + 10 * scale;
+      noteLines.forEach((line, index) => {
+        const prefix = index === 0 ? "* " : "  ";
+        context.fillText(`${prefix}${line}`, 12 * scale, noteY + index * 14 * scale);
+      });
+    }
+
     URL.revokeObjectURL(svgUrl);
 
     canvas.toBlob((blob) => {
