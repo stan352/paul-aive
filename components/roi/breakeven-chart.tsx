@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ReferenceDot,
@@ -78,6 +77,22 @@ export function BreakEvenChart({
             .
           </p>
         )}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span
+              className="size-2.5 rounded-full"
+              style={{ backgroundColor: REFERENCE_CHART_COLOR }}
+            />
+            Coût sans Aive
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="size-2.5 rounded-full"
+              style={{ backgroundColor: AIVE_CHART_COLOR }}
+            />
+            Coût avec Aive
+          </span>
+        </div>
         <div className="h-64 w-full" ref={containerRef}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={series.points} margin={{ top: 10, right: 10, bottom: 20, left: 0 }}>
@@ -102,7 +117,6 @@ export function BreakEvenChart({
                 formatter={(value) => currencyFormatter.format(Number(value))}
                 labelFormatter={(value) => `${numberFormatter.format(Number(value))} ${series.quantityLabel}`}
               />
-              <Legend verticalAlign="top" height={32} />
               {breakEvenQuantity !== null && (
                 <ReferenceLine
                   x={breakEvenQuantity}

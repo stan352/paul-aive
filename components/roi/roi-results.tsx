@@ -39,6 +39,7 @@ const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
 });
 const numberFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+const monthsFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 
 function formatCurrency(value: number | null): string {
   return value === null ? "—" : currencyFormatter.format(value);
@@ -49,7 +50,7 @@ function formatPercent(value: number | null): string {
 }
 
 function formatMonths(value: number | null): string {
-  return value === null ? "—" : `${numberFormatter.format(value)} mois`;
+  return value === null ? "—" : `${monthsFormatter.format(value)} mois`;
 }
 
 const UNAVAILABLE_CAPTION =
