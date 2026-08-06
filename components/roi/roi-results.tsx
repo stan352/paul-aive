@@ -36,13 +36,13 @@ type RoiResultsProps =
 
 const BREAKEVEN_NOTES = {
   brandCrea:
-    "Coût agence constant par déclinaison ; coût Aive qui baisse quand l'abonnement annuel se répartit sur davantage de déclinaisons.",
+    "Coût sans Aive = coût agence par déclinaison. Coût avec Aive = coût Aive annuel ÷ nombre de déclinaisons.",
   brandGeo:
-    "Coût par livrable dérivé du forfait mensuel de l'agence GEO, réparti sur le volume annuel de livrables (audits + articles) saisi ci-dessus — les KPI ROI/rentabilisation restent basés sur le forfait mensuel, indépendamment de ce volume.",
+    "Coût sans Aive = (coût agence mensuel × 12) ÷ volume annuel de livrables. Coût avec Aive = coût Aive annuel ÷ nombre de livrables.",
   agencyVideo:
-    "Coût actuel constant par déclinaison (temps interne × taux horaire) ; coût Aive qui baisse vers son coût résiduel quand l'abonnement Aive se répartit sur davantage de déclinaisons.",
+    "Coût sans Aive = temps interne × taux horaire. Coût avec Aive = (temps interne × 15 %) × taux horaire + coût Aive annuel ÷ nombre de déclinaisons.",
   agencyGeo:
-    "Coût moyen par livrable pondéré par le mix actuel d'audits et d'articles GEO (chacun avec son propre temps de production et son propre volume annuel).",
+    "Coût sans Aive = (temps × taux horaire) pondéré par les volumes d'audits et d'articles, ÷ volume total. Coût avec Aive = même calcul avec le temps résiduel (15 %) + coût Aive annuel ÷ nombre de livrables.",
 } as const;
 
 const BAR_CHART_NOTES = {
