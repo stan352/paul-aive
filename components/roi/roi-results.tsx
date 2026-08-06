@@ -52,6 +52,13 @@ function formatMonths(value: number | null): string {
   return value === null ? "—" : `${numberFormatter.format(value)} mois`;
 }
 
+const UNAVAILABLE_CAPTION =
+  "Impossible à calculer — vérifie qu'aucun coût saisi n'est à 0.";
+
+function captionFor(rawValue: number | null, normalCaption: string): string {
+  return rawValue === null ? UNAVAILABLE_CAPTION : normalCaption;
+}
+
 function KpiCard({
   label,
   value,
@@ -141,11 +148,11 @@ export function RoiResults(props: RoiResultsProps) {
             <KpiCard
               label="ROI"
               value={formatPercent(props.result.roiPercent)}
-              caption="Économie nette annuelle ÷ coût Aive × 100"
+              caption={captionFor(props.result.roiPercent, "Économie nette annuelle ÷ coût Aive × 100")}
             />
             <PaybackCard
               value={formatMonths(props.result.paybackMonths)}
-              caption="Coût Aive ÷ coût agence, ramené en mois"
+              caption={captionFor(props.result.paybackMonths, "Coût Aive ÷ coût agence, ramené en mois")}
             />
           </>
         ) : (
@@ -161,11 +168,17 @@ export function RoiResults(props: RoiResultsProps) {
             <KpiCard
               label="ROI agence"
               value={formatPercent(props.result.roiPercent)}
-              caption="Économie de production annuelle ÷ coût Aive × 100"
+              caption={captionFor(
+                props.result.roiPercent,
+                "Économie de production annuelle ÷ coût Aive × 100"
+              )}
             />
             <PaybackCard
               value={formatMonths(props.result.paybackMonths)}
-              caption="Coût Aive ÷ économie de production mensuelle"
+              caption={captionFor(
+                props.result.paybackMonths,
+                "Coût Aive ÷ économie de production mensuelle"
+              )}
             />
           </>
         )}

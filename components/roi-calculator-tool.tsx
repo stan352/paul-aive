@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgencyForm } from "@/components/roi/agency-form";
@@ -54,8 +55,30 @@ export function RoiCalculatorTool() {
   const agencyResult = computeAgencyROI(agencyInput);
 
   function handleAgencyProductTypeChange(productType: AgencyProductType) {
+    if (productType === agencyProductType) return;
+
+    const isUnchanged =
+      JSON.stringify(agencyInput) ===
+      JSON.stringify(DEFAULT_AGENCY_INPUT_BY_PRODUCT[agencyProductType]);
+    if (
+      !isUnchanged &&
+      !window.confirm(
+        "Changer d'offre remet les champs à leurs valeurs par défaut — les valeurs déjà saisies pour ce prospect seront perdues. Continuer ?"
+      )
+    ) {
+      return;
+    }
+
     setAgencyProductType(productType);
     setAgencyInput(DEFAULT_AGENCY_INPUT_BY_PRODUCT[productType]);
+  }
+
+  function handleReset() {
+    if (mode === "brand") {
+      setBrandInput(DEFAULT_BRAND_INPUT);
+    } else {
+      setAgencyInput(DEFAULT_AGENCY_INPUT_BY_PRODUCT[agencyProductType]);
+    }
   }
 
   return (
@@ -85,6 +108,10 @@ export function RoiCalculatorTool() {
             />
           </TabsContent>
         </Tabs>
+
+        <Button type="button" variant="ghost" size="sm" className="self-start" onClick={handleReset}>
+          Nouveau prospect
+        </Button>
 
         {mode === "brand" ? (
           <RoiResults mode="brand" input={brandInput} result={brandResult} />

@@ -46,8 +46,14 @@ export function OpportunityForm() {
     setClientSegment(GP_DEFAULT_SEGMENT[value]);
   }
 
+  function handleReset() {
+    setClientUrl("");
+    setClientSegment(GP_DEFAULT_SEGMENT[gpProfile]);
+    setState({ status: "idle" });
+  }
+
   function handleGenerate() {
-    const prompt = buildOpportunityPrompt({ gpProfile, clientUrl });
+    const prompt = buildOpportunityPrompt({ gpProfile, clientUrl, clientSegment });
 
     openClaudeDesignWithPrompt(prompt, (copied) => {
       setState({ status: "done", prompt, copied });
@@ -112,9 +118,18 @@ export function OpportunityForm() {
           </Select>
         </div>
 
-        <Button onClick={handleGenerate} disabled={!canSubmit}>
-          Générer
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleGenerate}
+            disabled={!canSubmit}
+            className="bg-gradient-aive text-white hover:opacity-90 disabled:opacity-50"
+          >
+            Générer
+          </Button>
+          <Button type="button" variant="ghost" onClick={handleReset}>
+            Nouveau prospect
+          </Button>
+        </div>
 
         {state.status === "done" && (
           <GeneratedPromptResult prompt={state.prompt} initiallyCopied={state.copied} />

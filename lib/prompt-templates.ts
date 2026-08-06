@@ -8,6 +8,7 @@ export type ClientSegment = (typeof CLIENT_SEGMENTS)[number];
 export interface OpportunityPromptInput {
   gpProfile: string;
   clientUrl: string;
+  clientSegment: ClientSegment;
 }
 
 export interface DiscoveryPromptInput {
@@ -68,13 +69,17 @@ export function buildDiscoveryPrompt({
   );
 }
 
-export function buildOpportunityPrompt({ gpProfile, clientUrl }: OpportunityPromptInput): string {
+export function buildOpportunityPrompt({
+  gpProfile,
+  clientUrl,
+  clientSegment,
+}: OpportunityPromptInput): string {
   return (
-    `Fais une recherche en ligne sur le prospect ${clientUrl} (Google Actualités, LinkedIn, son\n` +
-    `site, sa presse) pour trouver 3 à 5 opportunités commerciales exploitables par le Growth\n` +
-    `Partner ${gpProfile} : lancement produit, campagne marketing, expansion, recrutement clé,\n` +
-    `changement organisationnel. Pour chacune, explique en une phrase pourquoi elle est\n` +
-    `exploitable commercialement.\n` +
+    `Fais une recherche en ligne sur le prospect ${clientUrl} (segment ${clientSegment}) via\n` +
+    `Google Actualités, LinkedIn, son site, sa presse, pour trouver 3 à 5 opportunités\n` +
+    `commerciales exploitables par le Growth Partner ${gpProfile} : lancement produit,\n` +
+    `campagne marketing, expansion, recrutement clé, changement organisationnel. Pour chacune,\n` +
+    `explique en une phrase pourquoi elle est exploitable commercialement.\n` +
     `\n` +
     `Nous vendons uniquement deux offres, à recommander séparément ou ensemble selon le\n` +
     `prospect :\n` +
@@ -82,10 +87,11 @@ export function buildOpportunityPrompt({ gpProfile, clientUrl }: OpportunityProm
     `- Aive GEO : audit et optimisation de la visibilité de la marque dans les réponses des moteurs\n` +
     `  IA (AEO/GEO — Answer Engine / Generative Engine Optimization).\n` +
     `\n` +
-    `Construis un plan pour le rendez-vous de pitch client, couvrant 3 scénarios de vente : Aive\n` +
-    `seul, Aive GEO seul, et Aive + Aive GEO ensemble. Pour chaque scénario : la justification du\n` +
-    `choix au vu des opportunités identifiées, un script d'amorce, les points de discussion à\n` +
-    `dérouler, et des questions de qualification.\n` +
+    `Construis un plan pour le rendez-vous de pitch client, adapté au segment ${clientSegment}\n` +
+    `(ton, exemples et arguments pertinents pour ce type d'interlocuteur), couvrant 3 scénarios\n` +
+    `de vente : Aive seul, Aive GEO seul, et Aive + Aive GEO ensemble. Pour chaque scénario : la\n` +
+    `justification du choix au vu des opportunités identifiées, un script d'amorce, les points\n` +
+    `de discussion à dérouler, et des questions de qualification.\n` +
     `\n` +
     `Crée quelques slides avec ces informations — pas de texte structuré, un support visuel prêt\n` +
     `pour le rendez-vous.\n` +
