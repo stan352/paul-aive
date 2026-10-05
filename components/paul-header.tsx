@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Découverte" },
   { href: "/pitch", label: "Pitch" },
   { href: "/closing", label: "Closing" },
+  { href: "/offre", label: "Offre" },
 ] as const;
 
 export function PaulHeader({ active }: { active: (typeof NAV_ITEMS)[number]["href"] }) {
