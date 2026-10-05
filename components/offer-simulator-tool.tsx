@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GeneratedPromptResult } from "@/components/generated-prompt-result";
+import { openClaudeDesignWithPrompt } from "@/lib/claude-design";
+import { buildOfferPrompt } from "@/lib/prompt-templates";
 import {
   Select,
   SelectContent,
@@ -16,6 +20,7 @@ import {
   CREDIT_PACK_PRICE,
   DECLINAISON_PALIERS,
   DURATION_PALIERS,
+  OFFER_PLAN_FEATURES,
   PLANS,
   PRO_TO_ENTERPRISE_CREDIT_THRESHOLD,
   USAGE_PROFILES,
@@ -35,19 +40,6 @@ const DEFAULT_INPUT: OfferSimulatorInput = {
   usageProfile: "declinaisons",
   declinaisons: "4-10",
   users: "1-10",
-};
-
-const PLAN_FEATURES: Record<PlanId, string[]> = {
-  PRO: ["2 To d'hébergement", "Aive Academy", "Support AI"],
-  ENTERPRISE: [
-    "10 To d'hébergement",
-    "Aive Academy",
-    "Support AI",
-    "SSO personnalisé",
-    "1 playbook",
-    "Growth Partner dédié / SLA",
-    "1 entraînement logo",
-  ],
 };
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
@@ -188,7 +180,7 @@ function PlanCard({ quote, recommended }: { quote: PlanQuote; recommended: boole
         )}
 
         <ul className="flex flex-wrap gap-1">
-          {PLAN_FEATURES[quote.plan].map((feature) => (
+          {OFFER_PLAN_FEATURES[quote.plan].map((feature) => (
             <li
               key={feature}
               className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
@@ -221,13 +213,35 @@ function recommendationReason(
   return `Le PRO + packs de crédits reste moins cher que l'ENTERPRISE jusqu'à environ ${numberFormatter.format(PRO_TO_ENTERPRISE_CREDIT_THRESHOLD)} crédits / an.`;
 }
 
+type GenerationState =
+  | { status: "idle" }
+  | { status: "done"; prompt: string; copied: boolean };
+
 export function OfferSimulatorTool() {
   const [input, setInput] = useState<OfferSimulatorInput>(DEFAULT_INPUT);
+  const [prospect, setProspect] = useState("");
+  const [generation, setGeneration] = useState<GenerationState>({ status: "idle" });
   const result = computeOfferSimulation(input);
   const profile = USAGE_PROFILES[input.usageProfile];
 
   function update<K extends keyof OfferSimulatorInput>(key: K, value: OfferSimulatorInput[K]) {
     setInput((previous) => ({ ...previous, [key]: value }));
+  }
+
+  function handleReset() {
+    setInput(DEFAULT_INPUT);
+    setProspect("");
+    setGeneration({ status: "idle" });
+  }
+
+  function handleGenerate() {
+    const prompt = buildOfferPrompt({ prospect, input, result });
+
+    openClaudeDesignWithPrompt(prompt, (copied) => {
+      setGeneration({ status: "done", prompt, copied });
+    });
+
+    setGeneration({ status: "done", prompt, copied: false });
   }
 
   return (
@@ -236,11 +250,22 @@ export function OfferSimulatorTool() {
         <CardTitle>Outil 4 — Simulateur d&apos;offre</CardTitle>
         <CardDescription>
           Estime la consommation annuelle de crédits du prospect à partir de quelques
-          fourchettes, et indique l&apos;offre à pousser (PRO ou ENTERPRISE). Tout se calcule
-          dans ton navigateur.
+          fourchettes, et indique l&apos;offre à pousser (PRO ou ENTERPRISE). Clique sur
+          « Générer » : un onglet Claude Design s&apos;ouvre et le prompt de la proposition
+          d&apos;offre est copié dans ton presse-papier — colle-le (Cmd+V).
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="offer-prospect">Prospect (optionnel)</Label>
+          <Input
+            id="offer-prospect"
+            placeholder="Nom ou site du prospect, ex. https://www.peugeot.fr/"
+            value={prospect}
+            onChange={(event) => setProspect(event.target.value)}
+          />
+        </div>
+
         <div className="grid gap-5 sm:grid-cols-2">
           <PalierSelect
             id="video-volume"
@@ -288,16 +313,6 @@ export function OfferSimulatorTool() {
           />
         </div>
         <p className="-mt-3 text-xs text-muted-foreground">{profile.description}</p>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="self-start"
-          onClick={() => setInput(DEFAULT_INPUT)}
-        >
-          Nouveau prospect
-        </Button>
 
         <Card className="bg-muted/40">
           <CardContent className="flex flex-col gap-1">
@@ -352,6 +367,22 @@ export function OfferSimulatorTool() {
             </table>
           </CardContent>
         </Card>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleGenerate}
+            className="bg-gradient-aive text-white hover:opacity-90"
+          >
+            Générer
+          </Button>
+          <Button type="button" variant="ghost" onClick={handleReset}>
+            Nouveau prospect
+          </Button>
+        </div>
+
+        {generation.status === "done" && (
+          <GeneratedPromptResult prompt={generation.prompt} initiallyCopied={generation.copied} />
+        )}
 
         <p className="text-xs text-muted-foreground">
           * Calcul sur le milieu de chaque fourchette (haut de fourchette pour les

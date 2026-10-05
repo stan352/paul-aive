@@ -1,3 +1,19 @@
+import {
+  ANALYSIS_MODELS,
+  CREDIT_PACK_PRICE,
+  DECLINAISON_PALIERS,
+  DURATION_PALIERS,
+  OFFER_PLAN_FEATURES,
+  PLANS,
+  USAGE_PROFILES,
+  USER_PALIERS,
+  VIDEO_VOLUME_PALIERS,
+  type OfferSimulatorInput,
+  type OfferSimulatorResult,
+  type PlanId,
+  type PlanQuote,
+} from "@/lib/offer-simulator";
+
 export const TARGET_SOLUTIONS = ["Aive", "Aive GEO", "Aive + Aive GEO"] as const;
 
 export const CLIENT_SEGMENTS = ["Agences", "Marques", "Media & Networks"] as const;
@@ -99,5 +115,108 @@ export function buildOpportunityPrompt({
     `CONTRAINTE DE MISE EN PAGE : Slide 1, titre "RDV PITCH", avec en dessous un court\n` +
     `sous-titre (1 à 2 lignes) rappelant l'objectif de ce pitch et le contenu du deck\n` +
     `(opportunités identifiées, offre recommandée, plan d'action).`
+  );
+}
+
+export interface OfferPromptInput {
+  prospect?: string;
+  input: OfferSimulatorInput;
+  result: OfferSimulatorResult;
+}
+
+const euros = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+});
+const creditPrice = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 3,
+});
+const integer = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+const percent = new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 0 });
+
+function labelOf(list: readonly { id: string; label: string }[], id: string): string {
+  return list.find((item) => item.id === id)?.label ?? id;
+}
+
+function describeQuote(quote: PlanQuote): string {
+  const plan = PLANS[quote.plan];
+  if (!quote.eligible) {
+    return `- ${plan.name} : non adapté (nombre d'utilisateurs au-delà du périmètre PRO).\n`;
+  }
+  return (
+    `- ${plan.name} : ${euros.format(quote.totalCost)} / an au total — plan annuel ` +
+    `${euros.format(quote.basePrice)} (${integer.format(plan.includedCredits)} crédits inclus)` +
+    (quote.extraCredits > 0
+      ? ` + packs de ${integer.format(quote.extraCredits)} crédits (${euros.format(quote.extraCreditsCost)})`
+      : "") +
+    (quote.usersPacks > 0
+      ? ` + ${quote.usersPacks} option(s) utilisateurs (${euros.format(quote.usersCost)})`
+      : "") +
+    `. ${percent.format(quote.includedUsageRatio)} des crédits inclus consommés, prix effectif ` +
+    `${creditPrice.format(quote.effectiveCreditPrice)} / crédit.\n`
+  );
+}
+
+export function buildOfferPrompt({ prospect, input, result }: OfferPromptInput): string {
+  const trimmedProspect = prospect?.trim();
+  const recommended = PLANS[result.recommended];
+  const other: PlanId = result.recommended === "PRO" ? "ENTERPRISE" : "PRO";
+  const profile = USAGE_PROFILES[input.usageProfile];
+  return (
+    `Tu es l'Expert Sales Enablement chez Aive.\n` +
+    `Crée un deck de proposition commerciale présentant l'offre Aive recommandée` +
+    (trimmedProspect ? ` pour le prospect ${trimmedProspect}` : "") +
+    `, à partir de la simulation ci-dessous réalisée par le Growth Partner.\n` +
+    (trimmedProspect
+      ? `Recherche rapidement en ligne qui est ${trimmedProspect} pour personnaliser le ton et\n` +
+        `les exemples d'usage, sans modifier aucun chiffre.\n`
+      : "") +
+    `\n` +
+    `BESOINS DU PROSPECT (fourchettes estimées) :\n` +
+    `- Volume : ${labelOf(VIDEO_VOLUME_PALIERS, input.videoVolume)}\n` +
+    `- Durée moyenne par vidéo : ${labelOf(DURATION_PALIERS, input.duration)}\n` +
+    `- Usage : ${profile.label} — ${profile.description}\n` +
+    (input.usageProfile !== "analysis"
+      ? `- Déclinaisons : ${labelOf(DECLINAISON_PALIERS, input.declinaisons)}\n`
+      : "") +
+    `- ${labelOf(ANALYSIS_MODELS, input.analysisModel)}\n` +
+    `- Utilisateurs : ${labelOf(USER_PALIERS, input.users)}\n` +
+    `\n` +
+    `CONSOMMATION ESTIMÉE : ${integer.format(result.totalCredits)} crédits / an ` +
+    `(≈ ${integer.format(result.videos)} vidéos, ${integer.format(result.totalMinutes / 60)} h de contenu).\n` +
+    result.lines
+      .map(
+        (line) =>
+          `- ${line.label} : ${integer.format(line.credits)} crédits ` +
+          `(${percent.format(line.credits / result.totalCredits)})\n`
+      )
+      .join("") +
+    `\n` +
+    `COMPARAISON DES OFFRES :\n` +
+    describeQuote(result.quotes[result.recommended]) +
+    describeQuote(result.quotes[other]) +
+    `\n` +
+    `OFFRE RECOMMANDÉE : ${recommended.name}, soit ${euros.format(result.quotes[result.recommended].totalCost)} / an ` +
+    `(≈ ${euros.format(result.costPerVideo)} par vidéo).\n` +
+    `Inclus en ${recommended.name} : ${OFFER_PLAN_FEATURES[result.recommended].join(", ")}.\n` +
+    `Solutions incluses dans les deux offres : Web Platform, API Platform, Plugin Adobe, AEO / GEO.\n` +
+    `Rappels : les crédits annuels non consommés se reportent d'une année sur l'autre ; une\n` +
+    `action qui échoue n'est pas débitée ; les packs de crédits supplémentaires sont à\n` +
+    `${creditPrice.format(CREDIT_PACK_PRICE)} / crédit.\n` +
+    `\n` +
+    `Crée un deck de slides compact (une poignée de slides, visuelles, peu denses), structuré en\n` +
+    `4 parties : Vos besoins, Votre consommation estimée, L'offre recommandée, Comparaison des\n` +
+    `offres — pas un one-pager texte.\n` +
+    `\n` +
+    `CONTRAINTES DE MISE EN PAGE :\n` +
+    `- Slide 1 : titre "PROPOSITION D'OFFRE", avec en dessous un court sous-titre (1 à 2 lignes)\n` +
+    `  rappelant l'objectif du deck (dimensionner l'offre Aive selon le volume vidéo du prospect).\n` +
+    `- Chaque partie tient sur une seule slide.\n` +
+    `- La slide "L'offre recommandée" met en avant ${recommended.name} et son prix annuel en très gros.\n` +
+    `- Utilise exactement les chiffres fournis : ne recalcule rien et n'invente aucun prix.`
   );
 }

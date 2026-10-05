@@ -117,6 +117,19 @@ export const PLANS = {
 
 export type PlanId = keyof typeof PLANS;
 
+export const OFFER_PLAN_FEATURES: Record<PlanId, string[]> = {
+  PRO: ["2 To d'hébergement", "Aive Academy", "Support AI"],
+  ENTERPRISE: [
+    "10 To d'hébergement",
+    "Aive Academy",
+    "Support AI",
+    "SSO personnalisé",
+    "1 playbook",
+    "Growth Partner dédié / SLA",
+    "1 entraînement logo",
+  ],
+};
+
 export type OfferSimulatorInput = {
   videoVolume: (typeof VIDEO_VOLUME_PALIERS)[number]["id"];
   duration: (typeof DURATION_PALIERS)[number]["id"];
