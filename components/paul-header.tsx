@@ -4,7 +4,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Découverte" },
   { href: "/pitch", label: "Pitch" },
   { href: "/closing", label: "Closing" },
-  { href: "/offre", label: "Offre" },
+  { href: "/offre", label: "Simulateur d'offre" },
 ] as const;
 
 export function PaulHeader({ active }: { active: (typeof NAV_ITEMS)[number]["href"] }) {
@@ -19,6 +19,10 @@ export function PaulHeader({ active }: { active: (typeof NAV_ITEMS)[number]["hre
         </div>
         <p className="text-xs text-muted-foreground">
           Pitch Accelerator for Ultimate Leverage
+        </p>
+        <p className="max-w-md text-center text-sm text-muted-foreground">
+          Le copilote des commerciaux Aive : il t&apos;aide à préparer chaque étape de la vente,
+          de la découverte du prospect jusqu&apos;au chiffrage de l&apos;offre.
         </p>
       </div>
       <nav className="flex gap-1 rounded-full bg-muted p-1 text-sm">
