@@ -376,7 +376,7 @@ export function OfferSimulatorTool() {
             Générer
           </Button>
           <Button type="button" variant="ghost" onClick={handleReset}>
-            Nouveau prospect
+            Réinitialiser les champs
           </Button>
         </div>
 

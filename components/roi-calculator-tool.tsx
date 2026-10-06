@@ -105,7 +105,7 @@ export function RoiCalculatorTool() {
         </Tabs>
 
         <Button type="button" variant="ghost" size="sm" className="self-start" onClick={handleReset}>
-          Nouveau prospect
+          Réinitialiser les champs
         </Button>
 
         {mode === "brand" ? (
