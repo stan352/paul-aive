@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GeneratedPromptResult } from "@/components/generated-prompt-result";
+import { InfoTip } from "@/components/info-tip";
 import { openClaudeDesignWithPrompt } from "@/lib/claude-design";
 import { buildOfferPrompt } from "@/lib/prompt-templates";
 import {
@@ -23,21 +24,22 @@ import {
   OFFER_PLAN_FEATURES,
   PLANS,
   PRO_TO_ENTERPRISE_CREDIT_THRESHOLD,
-  USAGE_PROFILES,
+  USAGE_ACTIONS,
   USER_PALIERS,
   VIDEO_VOLUME_PALIERS,
   computeOfferSimulation,
+  hasDeclinaisonActions,
+  toggleUsageAction,
   type OfferSimulatorInput,
   type PlanId,
   type PlanQuote,
-  type UsageProfileId,
 } from "@/lib/offer-simulator";
 
 const DEFAULT_INPUT: OfferSimulatorInput = {
   videoVolume: "100-500",
   duration: "1-5",
   analysisModel: "M",
-  usageProfile: "declinaisons",
+  usageActions: ["autogenShort", "reframe", "subtitles", "exportHD", "creativeScore"],
   declinaisons: "4-10",
   users: "1-10",
 };
@@ -91,11 +93,6 @@ function PalierSelect<Id extends string>({
     </div>
   );
 }
-
-const USAGE_PROFILE_OPTIONS = (Object.keys(USAGE_PROFILES) as UsageProfileId[]).map((id) => ({
-  id,
-  label: USAGE_PROFILES[id].label,
-}));
 
 function PlanCard({ quote, recommended }: { quote: PlanQuote; recommended: boolean }) {
   const plan = PLANS[quote.plan];
@@ -222,7 +219,12 @@ export function OfferSimulatorTool() {
   const [prospect, setProspect] = useState("");
   const [generation, setGeneration] = useState<GenerationState>({ status: "idle" });
   const result = computeOfferSimulation(input);
-  const profile = USAGE_PROFILES[input.usageProfile];
+  const withDeclinaisons = hasDeclinaisonActions(input.usageActions);
+  const declinaisonsPerVideo =
+    DECLINAISON_PALIERS.find((palier) => palier.id === input.declinaisons)?.value ?? 0;
+  const perDeclinaisonCredits = USAGE_ACTIONS.filter(
+    (action) => action.per === "declinaison" && (input.usageActions as string[]).includes(action.id)
+  ).reduce((sum, action) => sum + action.credits, 0);
 
   function update<K extends keyof OfferSimulatorInput>(key: K, value: OfferSimulatorInput[K]) {
     setInput((previous) => ({ ...previous, [key]: value }));
@@ -281,14 +283,7 @@ export function OfferSimulatorTool() {
             options={DURATION_PALIERS}
             onChange={(value) => update("duration", value)}
           />
-          <PalierSelect
-            id="usage-profile"
-            label="Profil d'usage"
-            value={input.usageProfile}
-            options={USAGE_PROFILE_OPTIONS}
-            onChange={(value) => update("usageProfile", value)}
-          />
-          {input.usageProfile !== "analysis" && (
+          {withDeclinaisons && (
             <PalierSelect
               id="declinaisons"
               label="Déclinaisons générées par vidéo"
@@ -312,7 +307,69 @@ export function OfferSimulatorTool() {
             onChange={(value) => update("users", value)}
           />
         </div>
-        <p className="-mt-3 text-xs text-muted-foreground">{profile.description}</p>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 flex items-center gap-1 text-sm font-medium">
+            Profil d&apos;usage
+            <InfoTip label="Méthode de calcul des crédits">
+              <p className="mb-1.5 font-medium">Calcul des crédits / an</p>
+              <ol className="flex list-decimal flex-col gap-1 pl-4">
+                <li>
+                  <span className="font-medium">Analyse</span> (toujours comptée) = vidéos ×
+                  durée moyenne × crédits/min du modèle (S 4 · M 6 · L 8 · XL 10).
+                </li>
+                <li>
+                  <span className="font-medium">Actions cochées</span> = vidéos × déclinaisons
+                  par vidéo × somme des crédits cochés (hors Creative Score)
+                  {withDeclinaisons &&
+                    ` (ici ${numberFormatter.format(result.videos)} × ${declinaisonsPerVideo} × ${perDeclinaisonCredits} cr.)`}
+                  .
+                </li>
+                <li>
+                  <span className="font-medium">Creative Score</span> = 1 crédit par vidéo source.
+                </li>
+              </ol>
+              <p className="mt-1.5 text-muted-foreground">
+                Chaque fourchette est prise en son milieu (100 à 500 vidéos → 300). Sous-titres
+                traduits = 2 langues sur ~1 min ; AI Dubbing = 1 langue sur ~1 min. Coûts issus
+                de la grille tarifaire Aive.
+              </p>
+            </InfoTip>
+          </legend>
+          <p className="text-xs text-muted-foreground">
+            L&apos;analyse des vidéos est toujours comptée. Coche les actions réalisées sur
+            chaque déclinaison : elles s&apos;additionnent.
+          </p>
+          <div className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+            {USAGE_ACTIONS.map((action) => (
+              <label
+                key={action.id}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/60"
+              >
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={(input.usageActions as string[]).includes(action.id)}
+                  onChange={() =>
+                    update("usageActions", toggleUsageAction(input.usageActions, action.id))
+                  }
+                />
+                <span className="flex-1">
+                  {action.label}
+                  {"hint" in action && (
+                    <span className="text-xs text-muted-foreground"> · {action.hint}</span>
+                  )}
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {action.credits} cr.
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Un seul format d&apos;AutoGen et une seule définition d&apos;export par déclinaison.
+          </p>
+        </fieldset>
 
         <Card className="bg-muted/40">
           <CardContent className="flex flex-col gap-1">
@@ -386,8 +443,8 @@ export function OfferSimulatorTool() {
 
         <p className="text-xs text-muted-foreground">
           * Calcul sur le milieu de chaque fourchette (haut de fourchette pour les
-          utilisateurs). Analyse = durée × crédits/min du modèle. Chaque déclinaison est
-          supposée courte (≤ 1 min 30 → AI AutoGen short à 2 crédits). Dépassement en packs à{" "}
+          utilisateurs). Analyse = durée × crédits/min du modèle. Actions cochées = crédits ×
+          nombre de déclinaisons (Creative Score : par vidéo source). Dépassement en packs à{" "}
           {creditPriceFormatter.format(CREDIT_PACK_PRICE)} / crédit ; les crédits annuels non
           consommés se reportent. Grille : « Grille tarifaire AIVE - 09/10 ».
         </p>

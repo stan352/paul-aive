@@ -57,54 +57,52 @@ export const USER_PALIERS = [
   { id: "gt300", label: "Plus de 300 utilisateurs", value: 600, proExtraPacks: null, enterpriseExtraPacks: 1 },
 ] as const;
 
-export type UsageProfileId = "analysis" | "declinaisons" | "full";
+// Actions cochables, cumulables entre elles. `per` = assiette du coût :
+// "declinaison" (chaque output généré) ou "video" (chaque vidéo source).
+// `group` = actions mutuellement exclusives (un seul format d'AutoGen, une
+// seule définition d'export par output). Hypothèses : sous-titres traduits sur
+// des déclinaisons d'~1 min en 2 langues (1 crédit / min / langue, plafonné à
+// 10) ; AI Dubbing sur ~1 min en 1 langue (5 crédits / min).
+export const USAGE_ACTIONS = [
+  { id: "autogenShort", label: "AI AutoGen short", hint: "output ≤ 1 min 30", credits: 2, per: "declinaison", group: "autogen" },
+  { id: "autogenLong", label: "AI AutoGen long", hint: "output > 1 min 30", credits: 5, per: "declinaison", group: "autogen" },
+  { id: "reframe", label: "Recadrage (reframe)", hint: "formats 9:16, 1:1…", credits: 1, per: "declinaison" },
+  { id: "subtitles", label: "Sous-titres", credits: 1, per: "declinaison" },
+  { id: "translatedSubtitles", label: "Sous-titres traduits", hint: "2 langues, ~1 min", credits: 2, per: "declinaison" },
+  { id: "dubbing", label: "AI Dubbing", hint: "1 langue, ~1 min", credits: 5, per: "declinaison" },
+  { id: "publication", label: "Publication sur les réseaux", credits: 2, per: "declinaison" },
+  { id: "exportSD", label: "Export SD", hint: "480p / 640p", credits: 1, per: "declinaison", group: "export" },
+  { id: "exportHD", label: "Export HD", hint: "720p / 1080p", credits: 2, per: "declinaison", group: "export" },
+  { id: "export4K", label: "Export 4K", hint: "2160p", credits: 3, per: "declinaison", group: "export" },
+  { id: "export8K", label: "Export 8K", hint: "4320p", credits: 5, per: "declinaison", group: "export" },
+  { id: "creativeScore", label: "Creative Score", hint: "par vidéo source", credits: 1, per: "video" },
+] as const satisfies readonly {
+  id: string;
+  label: string;
+  hint?: string;
+  credits: number;
+  per: "declinaison" | "video";
+  group?: string;
+}[];
 
-// Crédits consommés par déclinaison selon le profil d'usage. Hypothèses :
-// déclinaisons courtes (≤ 1 min 30) → AI AutoGen short ; 1 reframe ; sous-titres ;
-// export HD. Le profil « Full » ajoute publication, sous-titres traduits
-// (2 langues, ~1 min) et AI Dubbing (1 langue, ~1 min).
-export const USAGE_PROFILES: Record<
-  UsageProfileId,
-  {
-    label: string;
-    description: string;
-    perDeclinaison: { label: string; credits: number }[];
-    // Creative Score : 1 crédit par nouveau template (≈ par vidéo source).
-    perVideo: { label: string; credits: number }[];
-  }
-> = {
-  analysis: {
-    label: "Analyse seule",
-    description: "Creative Data Extraction uniquement (taggage, insights, recherche).",
-    perDeclinaison: [],
-    perVideo: [],
-  },
-  declinaisons: {
-    label: "Analyse + déclinaisons",
-    description: "Analyse, puis génération de formats courts sous-titrés exportés en HD.",
-    perDeclinaison: [
-      { label: "AI AutoGen short", credits: 2 },
-      { label: "Reframe", credits: 1 },
-      { label: "Sous-titres", credits: 1 },
-      { label: "Export HD", credits: 2 },
-    ],
-    perVideo: [{ label: "Creative Score", credits: 1 }],
-  },
-  full: {
-    label: "Full (déclinaisons + localisation + publication)",
-    description: "Déclinaisons, puis traduction, doublage IA et publication sur les réseaux.",
-    perDeclinaison: [
-      { label: "AI AutoGen short", credits: 2 },
-      { label: "Reframe", credits: 1 },
-      { label: "Sous-titres", credits: 1 },
-      { label: "Export HD", credits: 2 },
-      { label: "Publication", credits: 2 },
-      { label: "Sous-titres traduits (2 langues)", credits: 2 },
-      { label: "AI Dubbing (1 langue)", credits: 5 },
-    ],
-    perVideo: [{ label: "Creative Score", credits: 1 }],
-  },
-};
+export type UsageActionId = (typeof USAGE_ACTIONS)[number]["id"];
+
+// Coche une action en décochant les autres actions de son groupe exclusif.
+export function toggleUsageAction(selected: UsageActionId[], id: UsageActionId): UsageActionId[] {
+  if (selected.includes(id)) return selected.filter((other) => other !== id);
+  const group = (USAGE_ACTIONS.find((action) => action.id === id) as { group?: string }).group;
+  const kept = group
+    ? selected.filter(
+        (other) =>
+          (USAGE_ACTIONS.find((action) => action.id === other) as { group?: string }).group !== group
+      )
+    : selected;
+  return [...kept, id];
+}
+
+export function hasDeclinaisonActions(selected: UsageActionId[]): boolean {
+  return USAGE_ACTIONS.some((action) => action.per === "declinaison" && selected.includes(action.id));
+}
 
 export const CREDIT_PACK_PRICE = 0.36;
 const PRO_USERS_PACK_PRICE = 3000;
@@ -134,7 +132,7 @@ export type OfferSimulatorInput = {
   videoVolume: (typeof VIDEO_VOLUME_PALIERS)[number]["id"];
   duration: (typeof DURATION_PALIERS)[number]["id"];
   analysisModel: (typeof ANALYSIS_MODELS)[number]["id"];
-  usageProfile: UsageProfileId;
+  usageActions: UsageActionId[];
   declinaisons: (typeof DECLINAISON_PALIERS)[number]["id"];
   users: (typeof USER_PALIERS)[number]["id"];
 };
@@ -200,21 +198,23 @@ export function computeOfferSimulation(input: OfferSimulatorInput): OfferSimulat
   const videos = find(VIDEO_VOLUME_PALIERS, input.videoVolume).value;
   const minutesPerVideo = find(DURATION_PALIERS, input.duration).value;
   const creditsPerMinute = find(ANALYSIS_MODELS, input.analysisModel).value;
-  const profile = USAGE_PROFILES[input.usageProfile];
-  const declinaisonsPerVideo =
-    input.usageProfile === "analysis" ? 0 : find(DECLINAISON_PALIERS, input.declinaisons).value;
+  const actions = USAGE_ACTIONS.filter((action) =>
+    (input.usageActions as string[]).includes(action.id)
+  );
+  const declinaisonsPerVideo = hasDeclinaisonActions(input.usageActions)
+    ? find(DECLINAISON_PALIERS, input.declinaisons).value
+    : 0;
   const users = find(USER_PALIERS, input.users);
 
   const totalMinutes = videos * minutesPerVideo;
   const lines: CreditLine[] = [
     { label: `Analyse (modèle ${input.analysisModel})`, credits: totalMinutes * creditsPerMinute },
-    ...profile.perVideo.map((action) => ({
+    ...actions.map((action) => ({
       label: action.label,
-      credits: videos * action.credits,
-    })),
-    ...profile.perDeclinaison.map((action) => ({
-      label: action.label,
-      credits: videos * declinaisonsPerVideo * action.credits,
+      credits:
+        action.per === "video"
+          ? videos * action.credits
+          : videos * declinaisonsPerVideo * action.credits,
     })),
   ];
   const totalCredits = Math.ceil(lines.reduce((sum, line) => sum + line.credits, 0));

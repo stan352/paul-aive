@@ -5,7 +5,8 @@ import {
   DURATION_PALIERS,
   OFFER_PLAN_FEATURES,
   PLANS,
-  USAGE_PROFILES,
+  USAGE_ACTIONS,
+  hasDeclinaisonActions,
   USER_PALIERS,
   VIDEO_VOLUME_PALIERS,
   type OfferSimulatorInput,
@@ -165,7 +166,9 @@ export function buildOfferPrompt({ prospect, input, result }: OfferPromptInput):
   const trimmedProspect = prospect?.trim();
   const recommended = PLANS[result.recommended];
   const other: PlanId = result.recommended === "PRO" ? "ENTERPRISE" : "PRO";
-  const profile = USAGE_PROFILES[input.usageProfile];
+  const actions = USAGE_ACTIONS.filter((action) =>
+    (input.usageActions as string[]).includes(action.id)
+  );
   return (
     `Tu es l'Expert Sales Enablement chez Aive.\n` +
     `Crée un deck de proposition commerciale présentant l'offre Aive recommandée` +
@@ -179,8 +182,10 @@ export function buildOfferPrompt({ prospect, input, result }: OfferPromptInput):
     `BESOINS DU PROSPECT (fourchettes estimées) :\n` +
     `- Volume : ${labelOf(VIDEO_VOLUME_PALIERS, input.videoVolume)}\n` +
     `- Durée moyenne par vidéo : ${labelOf(DURATION_PALIERS, input.duration)}\n` +
-    `- Usage : ${profile.label} — ${profile.description}\n` +
-    (input.usageProfile !== "analysis"
+    `- Usages : analyse des vidéos (Creative Data Extraction)` +
+    (actions.length > 0 ? `, ${actions.map((action) => action.label).join(", ")}` : "") +
+    `\n` +
+    (hasDeclinaisonActions(input.usageActions)
       ? `- Déclinaisons : ${labelOf(DECLINAISON_PALIERS, input.declinaisons)}\n`
       : "") +
     `- ${labelOf(ANALYSIS_MODELS, input.analysisModel)}\n` +
