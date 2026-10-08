@@ -151,7 +151,9 @@ export type PlanQuote = {
   totalCost: number;
   // Part des crédits inclus effectivement consommée (peut dépasser 100 %).
   includedUsageRatio: number;
-  effectiveCreditPrice: number;
+  // Prix unitaire de la grille pour les crédits inclus (PRO 0,36 €, ENTERPRISE
+  // 0,32 €). Pas de moyenne avec les packs : on n'affiche que des prix de la grille.
+  includedCreditPrice: number;
 };
 
 export type OfferSimulatorResult = {
@@ -179,7 +181,6 @@ function quotePlan(
   const packs = usersPacks ?? 0;
   const usersCost = packs * (plan === "PRO" ? PRO_USERS_PACK_PRICE : ENTERPRISE_USERS_PACK_PRICE);
   const totalCost = annualPrice + extraCreditsCost + usersCost;
-  const billedCredits = Math.max(totalCredits, includedCredits);
   return {
     plan,
     eligible: usersPacks !== null,
@@ -190,7 +191,7 @@ function quotePlan(
     usersCost,
     totalCost,
     includedUsageRatio: totalCredits / includedCredits,
-    effectiveCreditPrice: (annualPrice + extraCreditsCost) / billedCredits,
+    includedCreditPrice: annualPrice / includedCredits,
   };
 }
 

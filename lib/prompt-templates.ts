@@ -152,13 +152,13 @@ function describeQuote(quote: PlanQuote): string {
     `- ${plan.name} : ${euros.format(quote.totalCost)} / an au total — plan annuel ` +
     `${euros.format(quote.basePrice)} (${integer.format(plan.includedCredits)} crédits inclus)` +
     (quote.extraCredits > 0
-      ? ` + packs de ${integer.format(quote.extraCredits)} crédits (${euros.format(quote.extraCreditsCost)})`
+      ? ` + packs de ${integer.format(quote.extraCredits)} crédits à ${creditPrice.format(CREDIT_PACK_PRICE)} / crédit (${euros.format(quote.extraCreditsCost)})`
       : "") +
     (quote.usersPacks > 0
       ? ` + ${quote.usersPacks} option(s) utilisateurs (${euros.format(quote.usersCost)})`
       : "") +
-    `. ${percent.format(quote.includedUsageRatio)} des crédits inclus consommés, prix effectif ` +
-    `${creditPrice.format(quote.effectiveCreditPrice)} / crédit.\n`
+    `. ${percent.format(quote.includedUsageRatio)} des crédits inclus consommés. Prix du crédit ` +
+    `inclus : ${creditPrice.format(quote.includedCreditPrice)} / crédit.\n`
   );
 }
 
@@ -222,6 +222,9 @@ export function buildOfferPrompt({ prospect, input, result }: OfferPromptInput):
     `  rappelant l'objectif du deck (dimensionner l'offre Aive selon le volume vidéo du prospect).\n` +
     `- Chaque partie tient sur une seule slide.\n` +
     `- La slide "L'offre recommandée" met en avant ${recommended.name} et son prix annuel en très gros.\n` +
-    `- Utilise exactement les chiffres fournis : ne recalcule rien et n'invente aucun prix.`
+    `- Utilise exactement les chiffres fournis : ne recalcule rien et n'invente aucun prix.\n` +
+    `- Les seuls prix du crédit à afficher sont ceux de la grille : ${creditPrice.format(PLANS.PRO.annualPrice / PLANS.PRO.includedCredits)} (PRO),\n` +
+    `  ${creditPrice.format(PLANS.ENTERPRISE.annualPrice / PLANS.ENTERPRISE.includedCredits)} (ENTERPRISE) et ${creditPrice.format(CREDIT_PACK_PRICE)} (packs). N'affiche jamais de prix moyen ou\n` +
+    `  « effectif » par crédit.`
   );
 }

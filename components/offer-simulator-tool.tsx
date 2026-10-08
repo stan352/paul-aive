@@ -149,7 +149,7 @@ function PlanCard({ quote, recommended }: { quote: PlanQuote; recommended: boole
                 <li className="flex justify-between gap-2">
                   <span className="text-muted-foreground">
                     Packs : {numberFormatter.format(quote.extraCredits)} crédits ×{" "}
-                    {creditPriceFormatter.format(CREDIT_PACK_PRICE)}
+                    {creditPriceFormatter.format(CREDIT_PACK_PRICE)} / crédit
                   </span>
                   <span>{currencyFormatter.format(quote.extraCreditsCost)}</span>
                 </li>
@@ -164,8 +164,8 @@ function PlanCard({ quote, recommended }: { quote: PlanQuote; recommended: boole
                 </li>
               )}
               <li className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Prix effectif du crédit</span>
-                <span>{creditPriceFormatter.format(quote.effectiveCreditPrice)}</span>
+                <span className="text-muted-foreground">Prix du crédit inclus</span>
+                <span>{creditPriceFormatter.format(quote.includedCreditPrice)} / crédit</span>
               </li>
             </ul>
           </>
