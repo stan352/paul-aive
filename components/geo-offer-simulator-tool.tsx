@@ -15,7 +15,7 @@ import {
   GEO_AUDIT_PALIERS,
   GEO_COPILOT_PALIERS,
   GEO_CREDIT_PRICE,
-  GEO_DUBBING_PALIERS,
+  GEO_TRANSLATION_PALIERS,
   GEO_ENGINE_PALIERS,
   GEO_EXPERIENCE_OPTIONS,
   GEO_FREQUENCY_PALIERS,
@@ -23,7 +23,6 @@ import {
   GEO_MONTHLY_CREDITS,
   GEO_PLANS,
   GEO_PROMPT_PALIERS,
-  GEO_STRATEGY_PALIERS,
   GEO_TEAM_OPTIONS,
   computeGeoSimulation,
   type GeoPlanId,
@@ -38,8 +37,7 @@ const DEFAULT_INPUT: GeoSimulatorInput = {
   audits: "1-2",
   videoArticles: "1-5",
   basicArticles: "6-20",
-  dubbings: "0",
-  strategy: "1-10",
+  translations: "0",
   copilot: "medium",
   team: "partial",
   experience: "basic",
@@ -194,8 +192,7 @@ export function GeoOfferSimulatorTool() {
               <li>Monitoring = prompts × moteurs × exécutions par mois × 1 crédit.</li>
               <li>Audit GEO complet = 50 crédits (5 moteurs × 10 prompts).</li>
               <li>Article vidéo complet = 25 crédits ; article basique = 5 crédits.</li>
-              <li>Doublage multilingue = 8 crédits.</li>
-              <li>Analyse stratégique, concept créatif, initiative GEO = 2 crédits.</li>
+              <li>Traduction du texte = 8 crédits.</li>
               <li>Message Copilot, GEO scoring = 1 crédit.</li>
             </ul>
             <p className="mt-1.5 text-muted-foreground">
@@ -253,18 +250,11 @@ export function GeoOfferSimulatorTool() {
             onChange={(value) => update("basicArticles", value)}
           />
           <PalierSelect
-            id="geo-dubbings"
-            label="Doublages multilingues"
-            value={input.dubbings}
-            options={GEO_DUBBING_PALIERS}
-            onChange={(value) => update("dubbings", value)}
-          />
-          <PalierSelect
-            id="geo-strategy"
-            label="Analyses stratégiques / concepts créatifs"
-            value={input.strategy}
-            options={GEO_STRATEGY_PALIERS}
-            onChange={(value) => update("strategy", value)}
+            id="geo-translations"
+            label="Traductions du texte"
+            value={input.translations}
+            options={GEO_TRANSLATION_PALIERS}
+            onChange={(value) => update("translations", value)}
           />
           <PalierSelect
             id="geo-copilot"

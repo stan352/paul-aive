@@ -55,20 +55,11 @@ export const GEO_ARTICLE_PALIERS = [
   { id: "gt50", label: "Plus de 50 / mois", value: 75 },
 ] as const satisfies readonly Palier[];
 
-export const GEO_DUBBING_PALIERS = [
-  { id: "0", label: "Aucun", value: 0 },
+export const GEO_TRANSLATION_PALIERS = [
+  { id: "0", label: "Aucune", value: 0 },
   { id: "1-10", label: "1 à 10 / mois", value: 5 },
   { id: "11-50", label: "11 à 50 / mois", value: 30 },
   { id: "gt50", label: "Plus de 50 / mois", value: 75 },
-] as const satisfies readonly Palier[];
-
-// Analyses stratégiques, concepts créatifs, initiatives GEO (agent) : 2 crédits.
-export const GEO_STRATEGY_PALIERS = [
-  { id: "0", label: "Aucune", value: 0 },
-  { id: "1-10", label: "1 à 10 / mois", value: 5 },
-  { id: "11-30", label: "11 à 30 / mois", value: 20 },
-  { id: "31-100", label: "31 à 100 / mois", value: 65 },
-  { id: "gt100", label: "Plus de 100 / mois", value: 150 },
 ] as const satisfies readonly Palier[];
 
 // Messages Copilot et GEO scorings : 1 crédit.
@@ -108,8 +99,7 @@ export type GeoSimulatorInput = {
   audits: (typeof GEO_AUDIT_PALIERS)[number]["id"];
   videoArticles: (typeof GEO_ARTICLE_PALIERS)[number]["id"];
   basicArticles: (typeof GEO_ARTICLE_PALIERS)[number]["id"];
-  dubbings: (typeof GEO_DUBBING_PALIERS)[number]["id"];
-  strategy: (typeof GEO_STRATEGY_PALIERS)[number]["id"];
+  translations: (typeof GEO_TRANSLATION_PALIERS)[number]["id"];
   copilot: (typeof GEO_COPILOT_PALIERS)[number]["id"];
   team: (typeof GEO_TEAM_OPTIONS)[number]["id"];
   experience: (typeof GEO_EXPERIENCE_OPTIONS)[number]["id"];
@@ -173,12 +163,8 @@ export function computeGeoSimulation(input: GeoSimulatorInput): GeoSimulatorResu
       credits: find(GEO_ARTICLE_PALIERS, input.basicArticles).value * 5,
     },
     {
-      label: "Doublages multilingues (8 cr.)",
-      credits: find(GEO_DUBBING_PALIERS, input.dubbings).value * 8,
-    },
-    {
-      label: "Analyses stratégiques, concepts, initiatives (2 cr.)",
-      credits: find(GEO_STRATEGY_PALIERS, input.strategy).value * 2,
+      label: "Traductions du texte (8 cr.)",
+      credits: find(GEO_TRANSLATION_PALIERS, input.translations).value * 8,
     },
     {
       label: "Messages Copilot et GEO scorings (1 cr.)",

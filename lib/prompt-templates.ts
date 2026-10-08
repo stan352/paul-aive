@@ -19,13 +19,12 @@ import {
   GEO_AUDIT_PALIERS,
   GEO_COPILOT_PALIERS,
   GEO_CREDIT_PRICE,
-  GEO_DUBBING_PALIERS,
+  GEO_TRANSLATION_PALIERS,
   GEO_ENGINE_PALIERS,
   GEO_FREQUENCY_PALIERS,
   GEO_MONTHLY_CREDITS,
   GEO_PLANS,
   GEO_PROMPT_PALIERS,
-  GEO_STRATEGY_PALIERS,
   type GeoPlanId,
   type GeoPlanQuote,
   type GeoSimulatorInput,
@@ -280,8 +279,7 @@ export function buildGeoOfferPrompt({ prospect, input, result }: GeoOfferPromptI
     `- Audits GEO complets : ${labelOf(GEO_AUDIT_PALIERS, input.audits)}\n` +
     `- Articles vidéo complets : ${labelOf(GEO_ARTICLE_PALIERS, input.videoArticles)}\n` +
     `- Articles basiques : ${labelOf(GEO_ARTICLE_PALIERS, input.basicArticles)}\n` +
-    `- Doublages multilingues : ${labelOf(GEO_DUBBING_PALIERS, input.dubbings)}\n` +
-    `- Analyses stratégiques / concepts : ${labelOf(GEO_STRATEGY_PALIERS, input.strategy)}\n` +
+    `- Traductions du texte : ${labelOf(GEO_TRANSLATION_PALIERS, input.translations)}\n` +
     `- Copilot : ${labelOf(GEO_COPILOT_PALIERS, input.copilot)}\n` +
     `\n` +
     `CONSOMMATION ESTIMÉE : ${integer.format(result.monthlyCredits)} crédits / mois ` +
