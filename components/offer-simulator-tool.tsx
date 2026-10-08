@@ -61,7 +61,7 @@ const percentFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
 });
 
-function PalierSelect<Id extends string>({
+export function PalierSelect<Id extends string>({
   id,
   label,
   value,
@@ -247,208 +247,197 @@ export function OfferSimulatorTool() {
   }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>Outil 4 — Simulateur d&apos;offre</CardTitle>
-        <CardDescription>
-          Estime la consommation annuelle de crédits du prospect à partir de quelques
-          fourchettes, et indique l&apos;offre à pousser (PRO ou ENTERPRISE). Clique sur
-          « Générer » : un onglet Claude Design s&apos;ouvre et le prompt de la proposition
-          d&apos;offre est copié dans ton presse-papier — colle-le (Cmd+V).
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="offer-prospect">Prospect (optionnel)</Label>
-          <Input
-            id="offer-prospect"
-            placeholder="Nom ou site du prospect, ex. https://www.peugeot.fr/"
-            value={prospect}
-            onChange={(event) => setProspect(event.target.value)}
-          />
-        </div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="offer-prospect">Prospect (optionnel)</Label>
+        <Input
+          id="offer-prospect"
+          placeholder="Nom ou site du prospect, ex. https://www.peugeot.fr/"
+          value={prospect}
+          onChange={(event) => setProspect(event.target.value)}
+        />
+      </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <PalierSelect
+          id="video-volume"
+          label="Volume de vidéos traitées par an"
+          value={input.videoVolume}
+          options={VIDEO_VOLUME_PALIERS}
+          onChange={(value) => update("videoVolume", value)}
+        />
+        <PalierSelect
+          id="video-duration"
+          label="Durée moyenne d'une vidéo"
+          value={input.duration}
+          options={DURATION_PALIERS}
+          onChange={(value) => update("duration", value)}
+        />
+        {withDeclinaisons && (
           <PalierSelect
-            id="video-volume"
-            label="Volume de vidéos traitées par an"
-            value={input.videoVolume}
-            options={VIDEO_VOLUME_PALIERS}
-            onChange={(value) => update("videoVolume", value)}
+            id="declinaisons"
+            label="Déclinaisons générées par vidéo"
+            value={input.declinaisons}
+            options={DECLINAISON_PALIERS}
+            onChange={(value) => update("declinaisons", value)}
           />
-          <PalierSelect
-            id="video-duration"
-            label="Durée moyenne d'une vidéo"
-            value={input.duration}
-            options={DURATION_PALIERS}
-            onChange={(value) => update("duration", value)}
-          />
-          {withDeclinaisons && (
-            <PalierSelect
-              id="declinaisons"
-              label="Déclinaisons générées par vidéo"
-              value={input.declinaisons}
-              options={DECLINAISON_PALIERS}
-              onChange={(value) => update("declinaisons", value)}
-            />
-          )}
-          <PalierSelect
-            id="analysis-model"
-            label="Modèle d'analyse"
-            value={input.analysisModel}
-            options={ANALYSIS_MODELS}
-            onChange={(value) => update("analysisModel", value)}
-          />
-          <PalierSelect
-            id="users"
-            label="Utilisateurs actifs côté client"
-            value={input.users}
-            options={USER_PALIERS}
-            onChange={(value) => update("users", value)}
-          />
-        </div>
-
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 flex items-center gap-1 text-sm font-medium">
-            Profil d&apos;usage
-            <InfoTip label="Méthode de calcul des crédits">
-              <p className="mb-1.5 font-medium">Calcul des crédits / an</p>
-              <ol className="flex list-decimal flex-col gap-1 pl-4">
-                <li>
-                  <span className="font-medium">Analyse</span> (toujours comptée) = vidéos ×
-                  durée moyenne × crédits/min du modèle (S 4 · M 6 · L 8 · XL 10).
-                </li>
-                <li>
-                  <span className="font-medium">Actions cochées</span> = vidéos × déclinaisons
-                  par vidéo × somme des crédits cochés (hors Creative Score)
-                  {withDeclinaisons &&
-                    ` (ici ${numberFormatter.format(result.videos)} × ${declinaisonsPerVideo} × ${perDeclinaisonCredits} cr.)`}
-                  .
-                </li>
-                <li>
-                  <span className="font-medium">Creative Score</span> = 1 crédit par vidéo source.
-                </li>
-              </ol>
-              <p className="mt-1.5 text-muted-foreground">
-                Chaque fourchette est prise en son milieu (100 à 500 vidéos → 300). Sous-titres
-                traduits = 2 langues sur ~1 min ; AI Dubbing = 1 langue sur ~1 min. Coûts issus
-                de la grille tarifaire Aive.
-              </p>
-            </InfoTip>
-          </legend>
-          <p className="text-xs text-muted-foreground">
-            L&apos;analyse des vidéos est toujours comptée. Coche les actions réalisées sur
-            chaque déclinaison : elles s&apos;additionnent.
-          </p>
-          <div className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
-            {USAGE_ACTIONS.map((action) => (
-              <label
-                key={action.id}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/60"
-              >
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={(input.usageActions as string[]).includes(action.id)}
-                  onChange={() =>
-                    update("usageActions", toggleUsageAction(input.usageActions, action.id))
-                  }
-                />
-                <span className="flex-1">
-                  {action.label}
-                  {"hint" in action && (
-                    <span className="text-xs text-muted-foreground"> · {action.hint}</span>
-                  )}
-                </span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {action.credits} cr.
-                </span>
-              </label>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Un seul format d&apos;AutoGen et une seule définition d&apos;export par déclinaison.
-          </p>
-        </fieldset>
-
-        <Card className="bg-muted/40">
-          <CardContent className="flex flex-col gap-1">
-            <p className="text-sm text-muted-foreground">Consommation estimée</p>
-            <p className="text-3xl font-semibold">
-              {numberFormatter.format(result.totalCredits)}{" "}
-              <span className="text-base font-normal text-muted-foreground">crédits / an</span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              ≈ {numberFormatter.format(result.videos)} vidéos ·{" "}
-              {numberFormatter.format(result.totalMinutes / 60)} h de contenu analysé · offre
-              recommandée : {currencyFormatter.format(result.costPerVideo)} / vidéo
-            </p>
-            <p className="mt-2 text-sm">
-              <span className="font-medium">Offre à pousser : {result.recommended}.</span>{" "}
-              {recommendationReason(
-                result.recommended,
-                result.totalCredits,
-                result.quotes.PRO.eligible
-              )}
-            </p>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PlanCard quote={result.quotes.PRO} recommended={result.recommended === "PRO"} />
-          <PlanCard
-            quote={result.quotes.ENTERPRISE}
-            recommended={result.recommended === "ENTERPRISE"}
-          />
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Détail de la consommation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <table className="w-full text-sm">
-              <tbody>
-                {result.lines.map((line) => (
-                  <tr key={line.label} className="border-b border-border/60 last:border-0">
-                    <td className="py-1.5 text-muted-foreground">{line.label}</td>
-                    <td className="py-1.5 text-right tabular-nums">
-                      {numberFormatter.format(line.credits)}
-                    </td>
-                    <td className="py-1.5 pl-3 text-right text-xs text-muted-foreground tabular-nums">
-                      {percentFormatter.format(line.credits / result.totalCredits)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-
-        <div className="flex gap-2">
-          <Button
-            onClick={handleGenerate}
-            className="bg-gradient-aive text-white hover:opacity-90"
-          >
-            Générer
-          </Button>
-          <Button type="button" variant="ghost" onClick={handleReset}>
-            Réinitialiser les champs
-          </Button>
-        </div>
-
-        {generation.status === "done" && (
-          <GeneratedPromptResult prompt={generation.prompt} initiallyCopied={generation.copied} />
         )}
+        <PalierSelect
+          id="analysis-model"
+          label="Modèle d'analyse"
+          value={input.analysisModel}
+          options={ANALYSIS_MODELS}
+          onChange={(value) => update("analysisModel", value)}
+        />
+        <PalierSelect
+          id="users"
+          label="Utilisateurs actifs côté client"
+          value={input.users}
+          options={USER_PALIERS}
+          onChange={(value) => update("users", value)}
+        />
+      </div>
 
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 flex items-center gap-1 text-sm font-medium">
+          Profil d&apos;usage
+          <InfoTip label="Méthode de calcul des crédits">
+            <p className="mb-1.5 font-medium">Calcul des crédits / an</p>
+            <ol className="flex list-decimal flex-col gap-1 pl-4">
+              <li>
+                <span className="font-medium">Analyse</span> (toujours comptée) = vidéos ×
+                durée moyenne × crédits/min du modèle (S 4 · M 6 · L 8 · XL 10).
+              </li>
+              <li>
+                <span className="font-medium">Actions cochées</span> = vidéos × déclinaisons
+                par vidéo × somme des crédits cochés (hors Creative Score)
+                {withDeclinaisons &&
+                  ` (ici ${numberFormatter.format(result.videos)} × ${declinaisonsPerVideo} × ${perDeclinaisonCredits} cr.)`}
+                .
+              </li>
+              <li>
+                <span className="font-medium">Creative Score</span> = 1 crédit par vidéo source.
+              </li>
+            </ol>
+            <p className="mt-1.5 text-muted-foreground">
+              Chaque fourchette est prise en son milieu (100 à 500 vidéos → 300). Sous-titres
+              traduits = 2 langues sur ~1 min ; AI Dubbing = 1 langue sur ~1 min. Coûts issus
+              de la grille tarifaire Aive.
+            </p>
+          </InfoTip>
+        </legend>
         <p className="text-xs text-muted-foreground">
-          * Calcul sur le milieu de chaque fourchette (haut de fourchette pour les
-          utilisateurs). Analyse = durée × crédits/min du modèle. Actions cochées = crédits ×
-          nombre de déclinaisons (Creative Score : par vidéo source). Dépassement en packs à{" "}
-          {creditPriceFormatter.format(CREDIT_PACK_PRICE)} / crédit ; les crédits annuels non
-          consommés se reportent. Grille : « Grille tarifaire AIVE - 09/10 ».
+          L&apos;analyse des vidéos est toujours comptée. Coche les actions réalisées sur
+          chaque déclinaison : elles s&apos;additionnent.
         </p>
-      </CardContent>
-    </Card>
+        <div className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+          {USAGE_ACTIONS.map((action) => (
+            <label
+              key={action.id}
+              className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/60"
+            >
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={(input.usageActions as string[]).includes(action.id)}
+                onChange={() =>
+                  update("usageActions", toggleUsageAction(input.usageActions, action.id))
+                }
+              />
+              <span className="flex-1">
+                {action.label}
+                {"hint" in action && (
+                  <span className="text-xs text-muted-foreground"> · {action.hint}</span>
+                )}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {action.credits} cr.
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Un seul format d&apos;AutoGen et une seule définition d&apos;export par déclinaison.
+        </p>
+      </fieldset>
+
+      <Card className="bg-muted/40">
+        <CardContent className="flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">Consommation estimée</p>
+          <p className="text-3xl font-semibold">
+            {numberFormatter.format(result.totalCredits)}{" "}
+            <span className="text-base font-normal text-muted-foreground">crédits / an</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            ≈ {numberFormatter.format(result.videos)} vidéos ·{" "}
+            {numberFormatter.format(result.totalMinutes / 60)} h de contenu analysé · offre
+            recommandée : {currencyFormatter.format(result.costPerVideo)} / vidéo
+          </p>
+          <p className="mt-2 text-sm">
+            <span className="font-medium">Offre à pousser : {result.recommended}.</span>{" "}
+            {recommendationReason(
+              result.recommended,
+              result.totalCredits,
+              result.quotes.PRO.eligible
+            )}
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <PlanCard quote={result.quotes.PRO} recommended={result.recommended === "PRO"} />
+        <PlanCard
+          quote={result.quotes.ENTERPRISE}
+          recommended={result.recommended === "ENTERPRISE"}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Détail de la consommation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full text-sm">
+            <tbody>
+              {result.lines.map((line) => (
+                <tr key={line.label} className="border-b border-border/60 last:border-0">
+                  <td className="py-1.5 text-muted-foreground">{line.label}</td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    {numberFormatter.format(line.credits)}
+                  </td>
+                  <td className="py-1.5 pl-3 text-right text-xs text-muted-foreground tabular-nums">
+                    {percentFormatter.format(line.credits / result.totalCredits)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      <div className="flex gap-2">
+        <Button
+          onClick={handleGenerate}
+          className="bg-gradient-aive text-white hover:opacity-90"
+        >
+          Générer
+        </Button>
+        <Button type="button" variant="ghost" onClick={handleReset}>
+          Réinitialiser les champs
+        </Button>
+      </div>
+
+      {generation.status === "done" && (
+        <GeneratedPromptResult prompt={generation.prompt} initiallyCopied={generation.copied} />
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        * Calcul sur le milieu de chaque fourchette (haut de fourchette pour les
+        utilisateurs). Analyse = durée × crédits/min du modèle. Actions cochées = crédits ×
+        nombre de déclinaisons (Creative Score : par vidéo source). Dépassement en packs à{" "}
+        {creditPriceFormatter.format(CREDIT_PACK_PRICE)} / crédit ; les crédits annuels non
+        consommés se reportent. Grille : « Grille tarifaire AIVE - 09/10 ».
+      </p>
+    </div>
   );
 }

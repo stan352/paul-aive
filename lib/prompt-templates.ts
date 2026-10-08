@@ -14,6 +14,23 @@ import {
   type PlanId,
   type PlanQuote,
 } from "@/lib/offer-simulator";
+import {
+  GEO_ARTICLE_PALIERS,
+  GEO_AUDIT_PALIERS,
+  GEO_COPILOT_PALIERS,
+  GEO_CREDIT_PRICE,
+  GEO_DUBBING_PALIERS,
+  GEO_ENGINE_PALIERS,
+  GEO_FREQUENCY_PALIERS,
+  GEO_MONTHLY_CREDITS,
+  GEO_PLANS,
+  GEO_PROMPT_PALIERS,
+  GEO_STRATEGY_PALIERS,
+  type GeoPlanId,
+  type GeoPlanQuote,
+  type GeoSimulatorInput,
+  type GeoSimulatorResult,
+} from "@/lib/geo-offer-simulator";
 
 export const TARGET_SOLUTIONS = ["Aive", "Aive GEO", "Aive + Aive GEO"] as const;
 
@@ -226,5 +243,82 @@ export function buildOfferPrompt({ prospect, input, result }: OfferPromptInput):
     `- Les seuls prix du crédit à afficher sont ceux de la grille : ${creditPrice.format(PLANS.PRO.annualPrice / PLANS.PRO.includedCredits)} (PRO),\n` +
     `  ${creditPrice.format(PLANS.ENTERPRISE.annualPrice / PLANS.ENTERPRISE.includedCredits)} (ENTERPRISE) et ${creditPrice.format(CREDIT_PACK_PRICE)} (packs). N'affiche jamais de prix moyen ou\n` +
     `  « effectif » par crédit.`
+  );
+}
+
+export interface GeoOfferPromptInput {
+  prospect?: string;
+  input: GeoSimulatorInput;
+  result: GeoSimulatorResult;
+}
+
+export function buildGeoOfferPrompt({ prospect, input, result }: GeoOfferPromptInput): string {
+  const trimmedProspect = prospect?.trim();
+  const recommended = GEO_PLANS[result.recommended];
+  const other: GeoPlanId = result.recommended === "SELF_SERVE" ? "ACCOMPAGNEMENT" : "SELF_SERVE";
+  const describeGeoQuote = (quote: GeoPlanQuote) =>
+    `- Aive GEO ${GEO_PLANS[quote.plan].name} : ${euros.format(quote.totalCost)} / an` +
+    (quote.extraCredits > 0
+      ? ` (abonnement ${euros.format(quote.basePrice)} + ${integer.format(quote.extraCredits)} crédits ` +
+        `supplémentaires sur l'année à ${creditPrice.format(GEO_CREDIT_PRICE)}, soit ${euros.format(quote.extraCreditsCost)})`
+      : "") +
+    `.\n`;
+  return (
+    `Tu es l'Expert Sales Enablement chez Aive.\n` +
+    `Crée un deck de proposition commerciale présentant l'offre Aive GEO recommandée` +
+    (trimmedProspect ? ` pour le prospect ${trimmedProspect}` : "") +
+    `, à partir de la simulation ci-dessous réalisée par le Growth Partner. Aive GEO mesure et\n` +
+    `améliore la visibilité de la marque dans les réponses des moteurs IA (AEO / GEO).\n` +
+    (trimmedProspect
+      ? `Recherche rapidement en ligne qui est ${trimmedProspect} pour personnaliser le ton et\n` +
+        `les exemples d'usage, sans modifier aucun chiffre.\n`
+      : "") +
+    `\n` +
+    `BESOINS DU PROSPECT (fourchettes estimées, par mois) :\n` +
+    `- Monitoring : ${labelOf(GEO_PROMPT_PALIERS, input.prompts)}, ${labelOf(GEO_ENGINE_PALIERS, input.engines)}, ` +
+    `fréquence ${labelOf(GEO_FREQUENCY_PALIERS, input.frequency).toLowerCase()}\n` +
+    `- Audits GEO complets : ${labelOf(GEO_AUDIT_PALIERS, input.audits)}\n` +
+    `- Articles vidéo complets : ${labelOf(GEO_ARTICLE_PALIERS, input.videoArticles)}\n` +
+    `- Articles basiques : ${labelOf(GEO_ARTICLE_PALIERS, input.basicArticles)}\n` +
+    `- Doublages multilingues : ${labelOf(GEO_DUBBING_PALIERS, input.dubbings)}\n` +
+    `- Analyses stratégiques / concepts : ${labelOf(GEO_STRATEGY_PALIERS, input.strategy)}\n` +
+    `- Copilot : ${labelOf(GEO_COPILOT_PALIERS, input.copilot)}\n` +
+    `\n` +
+    `CONSOMMATION ESTIMÉE : ${integer.format(result.monthlyCredits)} crédits / mois ` +
+    `(${percent.format(result.monthlyUsageRatio)} des ${integer.format(GEO_MONTHLY_CREDITS)} crédits mensuels inclus).\n` +
+    result.lines
+      .map(
+        (line) =>
+          `- ${line.label} : ${integer.format(line.credits)} crédits / mois ` +
+          `(${percent.format(line.credits / result.monthlyCredits)})\n`
+      )
+      .join("") +
+    `\n` +
+    `COMPARAISON DES OFFRES (même volume : ${integer.format(GEO_MONTHLY_CREDITS)} crédits / mois, ` +
+    `120 000 / an) :\n` +
+    describeGeoQuote(result.quotes[result.recommended]) +
+    describeGeoQuote(result.quotes[other]) +
+    `\n` +
+    `OFFRE RECOMMANDÉE : Aive GEO ${recommended.name}, soit ` +
+    `${euros.format(result.quotes[result.recommended].totalCost)} / an.\n` +
+    (result.recommended === "ACCOMPAGNEMENT"
+      ? `Pourquoi l'accompagnement : ${result.reasons.join(", ")}.\n`
+      : `Pourquoi le self-serve : le client a l'équipe et la maturité GEO pour exploiter ses crédits en autonomie.\n`) +
+    `Rappels : 1 crédit = 1 action IA (${creditPrice.format(GEO_CREDIT_PRICE)}), le budget se pilote en temps réel ;\n` +
+    `les crédits ne se reportent pas d'un mois sur l'autre mais se réallouent librement entre\n` +
+    `monitoring, production et audits.\n` +
+    `\n` +
+    `Crée un deck de slides compact (une poignée de slides, visuelles, peu denses), structuré en\n` +
+    `4 parties : Vos besoins, Votre consommation estimée, L'offre recommandée, Comparaison des\n` +
+    `offres — pas un one-pager texte.\n` +
+    `\n` +
+    `CONTRAINTES DE MISE EN PAGE :\n` +
+    `- Slide 1 : titre "PROPOSITION D'OFFRE AIVE GEO", avec en dessous un court sous-titre (1 à 2\n` +
+    `  lignes) rappelant l'objectif du deck (dimensionner l'offre Aive GEO selon les besoins du prospect).\n` +
+    `- Chaque partie tient sur une seule slide.\n` +
+    `- La slide "L'offre recommandée" met en avant Aive GEO ${recommended.name} et son prix annuel en très gros.\n` +
+    `- Utilise exactement les chiffres fournis : ne recalcule rien et n'invente aucun prix.\n` +
+    `- Le seul prix du crédit à afficher est ${creditPrice.format(GEO_CREDIT_PRICE)} / crédit. N'affiche jamais de prix\n` +
+    `  moyen ou « effectif » par crédit.`
   );
 }

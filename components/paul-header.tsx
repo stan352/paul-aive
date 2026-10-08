@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth, signOut } from "@/auth";
 
 const NAV_ITEMS = [
   { href: "/", label: "Découverte" },
@@ -7,9 +8,24 @@ const NAV_ITEMS = [
   { href: "/offre", label: "Simulateur d'offre" },
 ] as const;
 
-export function PaulHeader({ active }: { active: (typeof NAV_ITEMS)[number]["href"] }) {
+export async function PaulHeader({ active }: { active: (typeof NAV_ITEMS)[number]["href"] }) {
+  const session = await auth();
   return (
     <header className="flex w-full max-w-2xl flex-col items-center gap-3">
+      {session?.user?.email && (
+        <form
+          className="flex items-center gap-2 self-end text-xs text-muted-foreground"
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/login" });
+          }}
+        >
+          <span>{session.user.email}</span>
+          <button type="submit" className="underline hover:text-foreground">
+            Déconnexion
+          </button>
+        </form>
+      )}
       <div className="flex flex-col items-center gap-1">
         <div className="flex items-center gap-2.5">
           <span aria-hidden="true" className="size-7 rounded-lg bg-gradient-aive" />
